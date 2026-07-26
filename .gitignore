@@ -1,0 +1,51 @@
+### Gradle / Build ###
+*.iml
+.gradle/
+/build/
+/app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+buildSrc/.gradle/
+
+### Local config (secrets, SDK path) ###
+local.properties
+keystore.properties
+*.keystore
+*.jks
+google-services.json
+secrets.properties
+
+### Android Studio / IntelliJ ###
+.idea/
+*.hprof
+.navigation/
+/output-metadata.json
+
+# Optionally keep these for consistent team settings (uncomment if desired):
+# !.idea/codeStyles/
+# !.idea/runConfigurations/
+
+### Kotlin / Compose ###
+.kotlin/
+
+### Log files ###
+*.log
+
+### OS junk ###
+.DS_Store
+Thumbs.db
+
+### Signing (never commit these) ###
+*.p12
+*.pem
+release-key.jks
+debug.keystore
+
+### Test/coverage output ###
+/app/build/test-results/
+/app/build/jacoco/
+/app/build/reports/
+
+### Android Profiler ###
+*.hprof
