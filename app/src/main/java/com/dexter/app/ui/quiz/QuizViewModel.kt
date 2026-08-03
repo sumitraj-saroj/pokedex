@@ -112,13 +112,18 @@ class QuizViewModel @Inject constructor(
         val isCorrect = pokemonId == state.targetPokemon.id
 
         if (isCorrect) {
-            hapticUtils.successPulse()
             val earnedXp = 10
             val newStreak = state.currentStreak + 1
             val newBest = maxOf(state.bestStreak, newStreak)
             val newScore = state.sessionScore + (100 * newStreak)
             val newXp = state.totalXpEarned + earnedXp
             val newCorrect = state.correctCount + 1
+
+            if (newStreak > 0 && newStreak % 5 == 0) {
+                hapticUtils.waveformPulse()
+            } else {
+                hapticUtils.successPulse()
+            }
 
             _uiState.update { current ->
                 current.copy(

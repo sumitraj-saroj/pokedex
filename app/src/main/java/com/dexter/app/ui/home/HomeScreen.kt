@@ -58,6 +58,7 @@ import com.dexter.app.ui.common.EmptySearchResultsState
 import com.dexter.app.ui.common.SearchFilterBar
 import com.dexter.app.ui.common.SkeletonPokemonCard
 import com.dexter.app.ui.common.SyncProgressScreen
+import com.dexter.app.ui.common.holographicShimmer
 import com.dexter.app.ui.common.TypeChip
 import com.dexter.app.ui.theme.Dimens
 import com.dexter.app.ui.theme.StatNumberStyle
@@ -333,12 +334,17 @@ fun PokemonCardItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptics = com.dexter.app.ui.common.rememberHapticUtils()
     val cardColor = pokemon.primaryType.seedColor.copy(alpha = 0.15f)
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable {
+                haptics.selectionTick()
+                onClick()
+            }
+            .holographicShimmer(enabled = pokemon.isLegendary || pokemon.isMythical),
         shape = RoundedCornerShape(Dimens.Section),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer

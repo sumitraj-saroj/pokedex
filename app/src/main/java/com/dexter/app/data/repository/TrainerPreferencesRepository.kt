@@ -1,6 +1,7 @@
 package com.dexter.app.data.repository
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -21,7 +22,8 @@ data class TrainerData(
     val level: Int,
     val loginStreak: Int,
     val lastLoginDate: String,
-    val avatarPokemonId: Int = 25
+    val avatarPokemonId: Int = 25,
+    val isHapticEnabled: Boolean = true
 ) {
     companion object {
         fun calculateLevel(xp: Int): Int {
@@ -60,18 +62,21 @@ class TrainerPreferencesRepository @Inject constructor(
     private val loginStreakKey = intPreferencesKey("login_streak")
     private val lastLoginDateKey = stringPreferencesKey("last_login_date")
     private val avatarPokemonIdKey = intPreferencesKey("avatar_pokemon_id")
+    private val hapticEnabledKey = booleanPreferencesKey("haptic_enabled")
 
     val trainerDataFlow: Flow<TrainerData> = context.trainerDataStore.data.map { prefs ->
         val xp = prefs[totalXpKey] ?: 0
         val streak = prefs[loginStreakKey] ?: 1
         val lastDate = prefs[lastLoginDateKey] ?: ""
         val avatarId = prefs[avatarPokemonIdKey] ?: 25
+        val hapticEnabled = prefs[hapticEnabledKey] ?: true
         TrainerData(
             totalXp = xp,
             level = TrainerData.calculateLevel(xp),
             loginStreak = streak,
             lastLoginDate = lastDate,
-            avatarPokemonId = avatarId
+            avatarPokemonId = avatarId,
+            isHapticEnabled = hapticEnabled
         )
     }
 
@@ -86,6 +91,12 @@ class TrainerPreferencesRepository @Inject constructor(
     suspend fun setAvatarPokemonId(avatarId: Int) {
         context.trainerDataStore.edit { prefs ->
             prefs[avatarPokemonIdKey] = avatarId
+        }
+    }
+
+    suspend fun setHapticEnabled(enabled: Boolean) {
+        context.trainerDataStore.edit { prefs ->
+            prefs[hapticEnabledKey] = enabled
         }
     }
 

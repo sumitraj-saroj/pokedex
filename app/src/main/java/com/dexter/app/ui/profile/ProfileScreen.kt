@@ -64,6 +64,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.data.repository.TrainerData
 
+import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material3.Switch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -71,10 +74,11 @@ fun ProfileScreen(
     onBackClick: () -> Unit,
     onAchievementsClick: () -> Unit,
     onAvatarSelect: (Int) -> Unit = {},
+    onHapticToggle: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showAvatarPicker by remember { mutableStateOf(false) }
-    val haptics = com.dexter.app.ui.common.rememberHapticUtils()
+    val haptics = com.dexter.app.ui.common.rememberHapticUtils(isEnabled = uiState.trainerData.isHapticEnabled)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -332,6 +336,57 @@ fun ProfileScreen(
                 Icon(imageVector = Icons.Default.MilitaryTech, contentDescription = "Badges")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("View Badges & Achievements", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+
+            // Haptic Feedback Settings Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Vibration,
+                            contentDescription = "Haptic Feedback",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Haptic Feedback",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Tactile response on taps, cards & achievements",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = trainer.isHapticEnabled,
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                haptics.mediumImpact()
+                            }
+                            onHapticToggle(checked)
+                        }
+                    )
+                }
             }
         }
 

@@ -155,11 +155,15 @@ private fun EvolutionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptics = com.dexter.app.ui.common.rememberHapticUtils()
     Column(
         modifier = modifier
             .defaultMinSize(minHeight = Dimens.MinTouchTarget)
             .clip(RoundedCornerShape(Dimens.Tight))
-            .clickable(onClick = onClick)
+            .clickable(onClick = {
+                haptics.selectionTick()
+                onClick()
+            })
             .padding(Dimens.Micro),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

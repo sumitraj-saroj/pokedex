@@ -153,7 +153,10 @@ fun CompareScreen(
                             CompareSelectionCard(
                                 pokemon = pkmnA,
                                 label = "Pokémon A",
-                                onCardClick = { onOpenPicker(CompareTarget.POKEMON_A) },
+                                onCardClick = {
+                                    hapticUtils.selectionTick()
+                                    onOpenPicker(CompareTarget.POKEMON_A)
+                                },
                                 onImageClick = { pkmnA?.let { onPokemonClick(it.id) } },
                                 modifier = Modifier.weight(1f)
                             )
@@ -161,37 +164,40 @@ fun CompareScreen(
                             CompareSelectionCard(
                                 pokemon = pkmnB,
                                 label = "Pokémon B",
-                                onCardClick = { onOpenPicker(CompareTarget.POKEMON_B) },
+                                onCardClick = {
+                                    hapticUtils.selectionTick()
+                                    onOpenPicker(CompareTarget.POKEMON_B)
+                                },
                                 onImageClick = { pkmnB?.let { onPokemonClick(it.id) } },
                                 modifier = Modifier.weight(1f)
                             )
                         }
 
-                            Surface(
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .clickable {
-                                        hapticUtils.lightTick()
-                                        onSwapPokemon()
-                                    },
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                tonalElevation = Dimens.ElevationLevel3,
-                                shadowElevation = Dimens.ElevationLevel2
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.SwapHoriz,
-                                        contentDescription = "Swap Pokémon",
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    hapticUtils.mediumImpact()
+                                    onSwapPokemon()
+                                },
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            tonalElevation = Dimens.ElevationLevel3,
+                            shadowElevation = Dimens.ElevationLevel2
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.SwapHoriz,
+                                    contentDescription = "Swap Pokémon",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
                         }
                     }
+                }
 
                 // 2. Base Stats Side-by-Side Comparison
                 if (pkmnA != null && pkmnB != null) {
@@ -281,7 +287,7 @@ fun CompareScreen(
         PokemonPickerBottomSheet(
             onDismissRequest = onClosePicker,
             onPokemonSelected = { pokemon ->
-                hapticUtils.lightTick()
+                hapticUtils.heavyImpact()
                 onSelectPokemon(pokemon)
             },
             pokemonList = uiState.allPokemon,

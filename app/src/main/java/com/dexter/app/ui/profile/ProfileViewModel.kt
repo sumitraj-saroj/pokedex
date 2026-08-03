@@ -76,4 +76,10 @@ class ProfileViewModel @Inject constructor(
             trainerPreferencesRepository.setAvatarPokemonId(avatarId)
         }
     }
+
+    fun setHapticEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            trainerPreferencesRepository.setHapticEnabled(enabled)
+        }
+    }
 }

@@ -112,7 +112,7 @@ fun TeamBuilderScreen(
                     if (activeMembers.isNotEmpty()) {
                         IconButton(
                             onClick = {
-                                hapticUtils.lightTick()
+                                hapticUtils.errorPulse()
                                 onClearTeam()
                             },
                             modifier = Modifier.size(36.dp)
@@ -161,9 +161,12 @@ fun TeamBuilderScreen(
                             TeamSlotCard(
                                 slotNumber = slot,
                                 pokemon = uiState.teamSlots[slot],
-                                onSlotClick = { onSlotClick(slot) },
+                                onSlotClick = {
+                                    hapticUtils.selectionTick()
+                                    onSlotClick(slot)
+                                },
                                 onRemoveClick = {
-                                    hapticUtils.lightTick()
+                                    hapticUtils.heavyImpact()
                                     onRemoveSlot(slot)
                                 },
                                 onPokemonClick = { onPokemonClick(it) }
@@ -179,9 +182,12 @@ fun TeamBuilderScreen(
                             TeamSlotCard(
                                 slotNumber = slot,
                                 pokemon = uiState.teamSlots[slot],
-                                onSlotClick = { onSlotClick(slot) },
+                                onSlotClick = {
+                                    hapticUtils.selectionTick()
+                                    onSlotClick(slot)
+                                },
                                 onRemoveClick = {
-                                    hapticUtils.lightTick()
+                                    hapticUtils.heavyImpact()
                                     onRemoveSlot(slot)
                                 },
                                 onPokemonClick = { onPokemonClick(it) }
@@ -210,7 +216,7 @@ fun TeamBuilderScreen(
         PokemonPickerBottomSheet(
             onDismissRequest = onDismissPicker,
             onPokemonSelected = { pokemon ->
-                hapticUtils.lightTick()
+                hapticUtils.heavyImpact()
                 onSelectPokemon(uiState.activePickerSlot, pokemon)
             },
             pokemonList = uiState.allPokemon,
