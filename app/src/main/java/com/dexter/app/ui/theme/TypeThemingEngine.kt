@@ -255,3 +255,81 @@ fun animateColorSchemeAsState(
         surfaceContainer = surfaceContainer
     )
 }
+
+/**
+ * Encapsulates Material 3 ColorScheme alongside ambient radial background glow brush
+ * and high-contrast text color for elemental types.
+ */
+data class PokemonTypeColorScheme(
+    val colorScheme: ColorScheme,
+    val ambientGradient: androidx.compose.ui.graphics.Brush,
+    val contrastTextColor: Color
+)
+
+/**
+ * Creates a rich ambient radial/mesh gradient combining primary type, secondary type,
+ * and background surface tones into a dynamic glow.
+ */
+fun createAmbientTypeGradient(
+    primaryType: PokemonType,
+    secondaryType: PokemonType? = null,
+    isDark: Boolean = false,
+    colorScheme: ColorScheme
+): androidx.compose.ui.graphics.Brush {
+    val primarySeed = primaryType.seedColor
+    val secondarySeed = secondaryType?.seedColor ?: primarySeed
+    val surfaceColor = colorScheme.surface
+
+    val centerColor = primarySeed.copy(alpha = if (isDark) 0.35f else 0.28f)
+    val midColor = secondarySeed.copy(alpha = if (isDark) 0.20f else 0.14f)
+    val outerColor = surfaceColor
+
+    return androidx.compose.ui.graphics.Brush.radialGradient(
+        colors = listOf(centerColor, midColor, outerColor),
+        center = androidx.compose.ui.geometry.Offset.Unspecified,
+        radius = Float.POSITIVE_INFINITY
+    )
+}
+
+/**
+ * Computes WCAG 2.1 compliant contrasting text color (dark charcoal or crisp white)
+ * based on relative luminance of the provided background color.
+ */
+fun getContrastingTextColor(backgroundColor: Color): Color {
+    val r = backgroundColor.red
+    val g = backgroundColor.green
+    val b = backgroundColor.blue
+    val luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b
+    return if (luminance > 0.45f) Color(0xFF101318) else Color(0xFFFFFFFF)
+}
+
+/**
+ * Retrieves cached or generates a full [PokemonTypeColorScheme] containing Material 3 ColorScheme,
+ * radial ambient background brush, and contrasting text colors.
+ */
+fun getOrGeneratePokemonTypeColorScheme(
+    primaryType: PokemonType,
+    secondaryType: PokemonType? = null,
+    isDark: Boolean = false
+): PokemonTypeColorScheme {
+    val colorScheme = getOrGenerateTypeColorScheme(primaryType, secondaryType, isDark)
+    val ambientGradient = createAmbientTypeGradient(primaryType, secondaryType, isDark, colorScheme)
+    val contrastTextColor = getContrastingTextColor(primaryType.seedColor)
+
+    return PokemonTypeColorScheme(
+        colorScheme = colorScheme,
+        ambientGradient = ambientGradient,
+        contrastTextColor = contrastTextColor
+    )
+}
+
+@Composable
+fun rememberPokemonTypeColorScheme(
+    primaryType: PokemonType,
+    secondaryType: PokemonType? = null,
+    isDark: Boolean = false
+): PokemonTypeColorScheme {
+    return remember(primaryType, secondaryType, isDark) {
+        getOrGeneratePokemonTypeColorScheme(primaryType, secondaryType, isDark)
+    }
+}
