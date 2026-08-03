@@ -18,5 +18,6 @@ data class DetailUiState(
     val evolutionNodes: List<EvolutionNode> = emptyList(),
     val moves: List<PokemonMove> = emptyList(),
     val abilities: List<PokemonAbility> = emptyList(),
-    val forms: List<PokemonForm> = emptyList()
+    val forms: List<PokemonForm> = emptyList(),
+    val tcgCardsUiState: TcgCardsUiState = TcgCardsUiState.Loading
 )

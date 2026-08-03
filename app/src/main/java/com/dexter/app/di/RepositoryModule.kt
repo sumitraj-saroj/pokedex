@@ -2,6 +2,8 @@ package com.dexter.app.di
 
 import com.dexter.app.data.repository.PokemonRepository
 import com.dexter.app.data.repository.PokemonRepositoryImpl
+import com.dexter.app.data.repository.TcgCardRepository
+import com.dexter.app.data.repository.TcgCardRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,4 +19,10 @@ abstract class RepositoryModule {
     abstract fun bindPokemonRepository(
         impl: PokemonRepositoryImpl
     ): PokemonRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTcgCardRepository(
+        impl: TcgCardRepositoryImpl
+    ): TcgCardRepository
 }

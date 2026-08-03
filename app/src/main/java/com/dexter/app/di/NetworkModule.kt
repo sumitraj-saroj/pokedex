@@ -50,4 +50,16 @@ object NetworkModule {
             .build()
             .create(PokeApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideTcgdexApi(okHttpClient: OkHttpClient, json: Json): com.dexter.app.data.remote.TcgdexApi {
+        val contentType = "application/json".toMediaType()
+        return Retrofit.Builder()
+            .baseUrl("https://api.tcgdex.net/v2/en/")
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+            .create(com.dexter.app.data.remote.TcgdexApi::class.java)
+    }
 }

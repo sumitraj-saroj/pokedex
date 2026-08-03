@@ -82,6 +82,7 @@ fun DexterNavHost(
 
     val showBottomBar = currentRoute in bottomNavItems.map { it.route }
     val showGlobalTopBar = currentRoute in listOf(Screen.TeamBuilder.route, Screen.Compare.route, Screen.Quiz.route)
+    val haptics = com.dexter.app.ui.common.rememberHapticUtils(isEnabled = profileUiState.trainerData.isHapticEnabled)
 
     Scaffold(
         modifier = modifier,
@@ -100,7 +101,10 @@ fun DexterNavHost(
                         )
                     },
                     actions = {
-                        IconButton(onClick = { navController.navigate(Screen.Profile.route) }) {
+                        IconButton(onClick = {
+                            haptics.lightClick()
+                            navController.navigate(Screen.Profile.route)
+                        }) {
                             val avatarUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${avatarPokemonId}.png"
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
@@ -131,6 +135,7 @@ fun DexterNavHost(
                             selected = selected,
                             onClick = {
                                 if (currentRoute != item.route) {
+                                    haptics.selectionTick()
                                     navController.navigate(item.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true
@@ -223,11 +228,10 @@ fun DexterNavHost(
             composable(route = Screen.Quiz.route) {
                 val viewModel: QuizViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                val hapticUtils = com.dexter.app.ui.common.rememberHapticUtils()
 
                 QuizScreen(
                     uiState = uiState,
-                    onSelectOption = { pokemonId -> viewModel.selectOption(pokemonId, hapticUtils) },
+                    onSelectOption = { pokemonId -> viewModel.selectOption(pokemonId, haptics) },
                     onRestartGame = viewModel::restartGame,
                     onProfileClick = { navController.navigate(Screen.Profile.route) }
                 )
@@ -241,7 +245,8 @@ fun DexterNavHost(
                     uiState = uiState,
                     onBackClick = { navController.popBackStack() },
                     onAchievementsClick = { navController.navigate(Screen.Achievements.route) },
-                    onAvatarSelect = viewModel::selectAvatar
+                    onAvatarSelect = viewModel::selectAvatar,
+                    onHapticToggle = viewModel::setHapticEnabled
                 )
             }
 
@@ -273,7 +278,8 @@ fun DexterNavHost(
                     onVariantSelected = viewModel::selectVariant,
                     onPokemonClick = { pokemonId ->
                         navController.navigate(Screen.Detail.createRoute(pokemonId))
-                    }
+                    },
+                    onRetryTcgCards = viewModel::retryFetchTcgCards
                 )
             }
         }

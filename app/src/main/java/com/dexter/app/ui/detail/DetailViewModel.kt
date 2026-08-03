@@ -4,17 +4,21 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dexter.app.data.repository.PokemonRepository
+import com.dexter.app.data.repository.TcgCardRepository
 import com.dexter.app.data.repository.ThemePreferencesRepository
 import com.dexter.app.domain.model.PokemonForm
 import com.dexter.app.domain.model.PokemonVariant
+import com.dexter.app.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,12 +28,14 @@ import javax.inject.Inject
 class DetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val pokemonRepository: PokemonRepository,
+    private val tcgCardRepository: TcgCardRepository,
     private val themePreferencesRepository: ThemePreferencesRepository
 ) : ViewModel() {
 
     private val pokemonId: Int = checkNotNull(savedStateHandle["pokemonId"])
 
     private val _selectedVariant = MutableStateFlow<PokemonVariant>(PokemonVariant.Official)
+    private val _retryTcgCardsTrigger = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
@@ -52,6 +58,23 @@ class DetailViewModel @Inject constructor(
     private val abilitiesFlow = pokemonRepository.observeAbilitiesForPokemon(pokemonId)
     private val formsFlow = pokemonRepository.observeFormsForPokemon(pokemonId)
 
+    private val tcgCardsFlow: Flow<TcgCardsUiState> = combine(pokemonFlow, _retryTcgCardsTrigger) { pokemon, _ -> pokemon }
+        .flatMapLatest { pokemon ->
+            if (pokemon == null) {
+                flowOf(TcgCardsUiState.Loading)
+            } else {
+                tcgCardRepository.getCardsForPokemon(pokemon.capitalizedName).map { resource ->
+                    when (resource) {
+                        is Resource.Loading -> TcgCardsUiState.Loading
+                        is Resource.Success -> {
+                            if (resource.data.isEmpty()) TcgCardsUiState.Empty else TcgCardsUiState.Success(resource.data)
+                        }
+                        is Resource.Error -> TcgCardsUiState.Error(resource.message)
+                    }
+                }
+            }
+        }
+
     val uiState: StateFlow<DetailUiState> = combine(
         pokemonFlow,
         themePreferencesRepository.themeModeFlow,
@@ -59,7 +82,8 @@ class DetailViewModel @Inject constructor(
         evolutionsFlow,
         movesFlow,
         abilitiesFlow,
-        formsFlow
+        formsFlow,
+        tcgCardsFlow
     ) { args ->
         val pokemon = args[0] as? com.dexter.app.domain.model.Pokemon
         val themeMode = args[1] as com.dexter.app.data.repository.AppThemeMode
@@ -72,6 +96,7 @@ class DetailViewModel @Inject constructor(
         val abilities = args[5] as List<com.dexter.app.domain.model.PokemonAbility>
         @Suppress("UNCHECKED_CAST")
         val forms = args[6] as List<PokemonForm>
+        val tcgCardsUiState = args[7] as TcgCardsUiState
 
         DetailUiState(
             pokemon = pokemon,
@@ -81,7 +106,8 @@ class DetailViewModel @Inject constructor(
             evolutionNodes = evolutions,
             moves = moves,
             abilities = abilities,
-            forms = forms
+            forms = forms,
+            tcgCardsUiState = tcgCardsUiState
         )
     }.stateIn(
         scope = viewModelScope,
@@ -109,5 +135,9 @@ class DetailViewModel @Inject constructor(
                 pokemonRepository.toggleFavorite(pokemon.id, !current)
             }
         }
+    }
+
+    fun retryFetchTcgCards() {
+        _retryTcgCardsTrigger.value += 1
     }
 }

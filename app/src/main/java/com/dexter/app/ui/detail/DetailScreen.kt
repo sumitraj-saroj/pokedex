@@ -72,6 +72,7 @@ fun DetailScreen(
     onToggleFavorite: () -> Unit,
     onVariantSelected: (PokemonVariant) -> Unit,
     onPokemonClick: (Int) -> Unit,
+    onRetryTcgCards: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val basePokemon = uiState.pokemon
@@ -420,6 +421,13 @@ fun DetailScreen(
                 MovesAndAbilitiesSection(
                     abilities = uiState.abilities,
                     moves = uiState.moves,
+                    modifier = Modifier.padding(horizontal = Dimens.ScreenEdgePadding, vertical = Dimens.Tight)
+                )
+
+                // TCG Pokémon Cards Gallery Section
+                com.dexter.app.ui.detail.components.TcgCardsSection(
+                    uiState = uiState.tcgCardsUiState,
+                    onRetry = onRetryTcgCards,
                     modifier = Modifier.padding(horizontal = Dimens.ScreenEdgePadding, vertical = Dimens.Tight)
                 )
 
