@@ -99,4 +99,7 @@ dependencies {
 
     // Media3 ExoPlayer (Quiz cry playback)
     implementation("androidx.media3:media3-exoplayer:1.4.1")
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
 }

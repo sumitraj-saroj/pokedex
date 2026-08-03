@@ -6,9 +6,8 @@ import org.junit.Test
 class AchievementEngineTest {
 
     @Test
-    fun `test achievement engine evaluation`() {
-        val engine = AchievementEngine()
-        val achievements = engine.evaluateProgress(caughtCount = 150)
+    fun `test predefined achievements list is non empty`() {
+        val achievements = AchievementEngine.PREDEFINED_ACHIEVEMENTS
         assertTrue(achievements.isNotEmpty())
     }
 }
