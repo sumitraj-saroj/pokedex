@@ -14,5 +14,6 @@ data class QuizUiState(
     val bestStreak: Int = 0,
     val isAnswered: Boolean = false,
     val selectedOptionId: Int? = null,
-    val isGameOver: Boolean = false
+    val isGameOver: Boolean = false,
+    val isPlayingAudio: Boolean = false
 )

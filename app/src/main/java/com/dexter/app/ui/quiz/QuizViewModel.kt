@@ -33,7 +33,8 @@ class QuizViewModel @Inject constructor(
     private val quizScoreDao: QuizScoreDao,
     private val userCollectionDao: UserCollectionDao,
     private val trainerPreferencesRepository: TrainerPreferencesRepository,
-    private val achievementEngine: AchievementEngine
+    private val achievementEngine: AchievementEngine,
+    private val quizAudioPlayer: QuizAudioPlayer
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuizUiState())
@@ -44,6 +45,12 @@ class QuizViewModel @Inject constructor(
     private var autoAdvanceJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            quizAudioPlayer.isPlaying.collect { playing ->
+                _uiState.update { it.copy(isPlayingAudio = playing) }
+            }
+        }
+
         viewModelScope.launch {
             pokemonRepository.observeAllPokemon().collect { list ->
                 if (list.isNotEmpty()) {
@@ -88,7 +95,16 @@ class QuizViewModel @Inject constructor(
         val target = if (targetQueue.isNotEmpty()) targetQueue.removeFirst() else allPokemonPool.random()
         refillQueueAndPrecache()
 
-        val distractors = allPokemonPool.filter { it.id != target.id }.shuffled().take(3)
+        val distractors = mutableListOf<Pokemon>()
+        val poolSize = allPokemonPool.size
+        val usedIds = mutableSetOf(target.id)
+        val random = kotlin.random.Random
+        while (distractors.size < 3 && usedIds.size < poolSize) {
+            val candidate = allPokemonPool[random.nextInt(poolSize)]
+            if (usedIds.add(candidate.id)) {
+                distractors.add(candidate)
+            }
+        }
         val options = (distractors + target).shuffled()
 
         _uiState.update { current ->
@@ -119,10 +135,14 @@ class QuizViewModel @Inject constructor(
             val newXp = state.totalXpEarned + earnedXp
             val newCorrect = state.correctCount + 1
 
-            if (newStreak > 0 && newStreak % 5 == 0) {
-                hapticUtils.waveformPulse()
-            } else {
-                hapticUtils.successPulse()
+            try {
+                if (newStreak > 0 && newStreak % 5 == 0) {
+                    hapticUtils.waveformPulse()
+                } else {
+                    hapticUtils.successPulse()
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
             }
 
             _uiState.update { current ->
@@ -219,5 +239,15 @@ class QuizViewModel @Inject constructor(
                 trainerLevel = trainer?.level ?: 1
             )
         }
+    }
+
+    fun playCry() {
+        val target = _uiState.value.targetPokemon ?: return
+        quizAudioPlayer.playCry(target.cryAudioUrl)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        quizAudioPlayer.release()
     }
 }

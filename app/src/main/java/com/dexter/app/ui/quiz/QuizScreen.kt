@@ -25,7 +25,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Replay
+import com.dexter.app.ui.common.GlassmorphicTopAppBar
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -49,54 +51,92 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
 @Composable
 fun QuizScreen(
     uiState: QuizUiState,
     onSelectOption: (Int) -> Unit,
+    onPlayCry: () -> Unit = {},
     onRestartGame: () -> Unit,
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+
+    androidx.compose.material3.Scaffold(
         modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        if (uiState.isLoading || uiState.targetPokemon == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Preparing Pokémon Quiz...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+        topBar = {
+            com.dexter.app.ui.common.GlassmorphicTopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Psychology,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Who's That Pokémon?",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
                 }
-            }
-            return@Surface
+            )
         }
+    ) { innerPadding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            if (uiState.isLoading || uiState.targetPokemon == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Preparing Pokémon Quiz...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                }
+                return@Surface
+            }
 
-        val target = uiState.targetPokemon
+            val target = uiState.targetPokemon
 
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val screenHeight = maxHeight
-            val needsScroll = screenHeight < 560.dp
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val screenHeight = maxHeight
+                val needsScroll = screenHeight < 620.dp
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (needsScroll) Modifier.verticalScroll(rememberScrollState())
-                        else Modifier
-                    )
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (needsScroll) Modifier.verticalScroll(rememberScrollState())
+                            else Modifier
+                        )
+                        .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 88.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                 // Header stats bar: Lives, Score, Streak
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -109,7 +149,7 @@ fun QuizScreen(
                                 contentDescription = "Life",
                                 tint = if (hasLife) Color(0xFFE53935) else MaterialTheme.colorScheme.outline,
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(22.dp)
                                     .padding(end = 2.dp)
                             )
                         }
@@ -121,7 +161,7 @@ fun QuizScreen(
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -149,12 +189,11 @@ fun QuizScreen(
                     }
                 }
 
-                // Reserved Fixed-Height Feedback Banner (36.dp)
-                // Ensures ZERO vertical height change when feedback text appears/disappears
+                // Reserved Fixed-Height Feedback Banner (32.dp)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(36.dp),
+                        .height(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     androidx.compose.animation.AnimatedVisibility(
@@ -164,7 +203,7 @@ fun QuizScreen(
                     ) {
                         Text(
                             text = "It's ${target.capitalizedName}!",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center
@@ -172,17 +211,17 @@ fun QuizScreen(
                     }
                 }
 
-                // Pokémon Image Container Card
+                // Pokémon Image Container Card (Expands dynamically to fill available middle space)
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(210.dp)
+                        .weight(1f)
                         .padding(vertical = 4.dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -200,23 +239,47 @@ fun QuizScreen(
                                     .build(),
                                 contentDescription = "Quiz Sprite",
                                 colorFilter = if (uiState.isAnswered) null else ColorFilter.tint(Color.Black, BlendMode.SrcIn),
-                                modifier = Modifier.size(175.dp)
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(32.dp)
+                            )
+                        }
+
+                        // Top-Right Play Cry Button
+                        IconButton(
+                            onClick = onPlayCry,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VolumeUp,
+                                contentDescription = "Play Cry Audio",
+                                tint = if (uiState.isPlayingAudio) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        // Bottom Live Soundwave Visualizer Overlay
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                        ) {
+                            AudioWaveformVisualizer(
+                                isPlaying = uiState.isPlayingAudio,
+                                height = 32.dp
                             )
                         }
                     }
                 }
 
-                // Flexible spacer pushing the 4 options down towards the bottom navigation bar
-                if (!needsScroll) {
-                    Spacer(modifier = Modifier.weight(1f))
-                } else {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 4 Multiple Choice Options (Positioned statically at bottom)
+                // 4 Multiple Choice Options (Positioned cleanly above bottom bar)
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     uiState.options.forEach { option ->
                         val isSelected = uiState.selectedOptionId == option.id
@@ -241,11 +304,11 @@ fun QuizScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp)
+                                .height(48.dp)
                                 .clickable(enabled = !uiState.isAnswered) {
                                     onSelectOption(option.id)
                                 },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = backgroundColor),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
@@ -309,5 +372,6 @@ fun QuizScreen(
             )
         }
     }
+}
 }
 
