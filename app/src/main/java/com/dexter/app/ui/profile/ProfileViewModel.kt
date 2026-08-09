@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.dexter.app.data.local.AchievementDao
 import com.dexter.app.data.local.QuizScoreDao
 import com.dexter.app.data.local.UserCollectionDao
+import com.dexter.app.data.repository.AppThemeMode
+import com.dexter.app.data.repository.ThemePreferencesRepository
 import com.dexter.app.data.repository.TrainerData
 import com.dexter.app.data.repository.TrainerPreferencesRepository
 import com.dexter.app.domain.engine.AchievementEngine
@@ -19,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val trainerPreferencesRepository: TrainerPreferencesRepository,
+    private val themePreferencesRepository: ThemePreferencesRepository,
     private val quizScoreDao: QuizScoreDao,
     private val userCollectionDao: UserCollectionDao,
     private val achievementDao: AchievementDao,
@@ -34,10 +37,11 @@ class ProfileViewModel @Inject constructor(
 
             combine(
                 trainerPreferencesRepository.trainerDataFlow,
+                themePreferencesRepository.themeModeFlow,
                 userCollectionDao.observeCaughtCount(),
                 quizScoreDao.observeAllQuizScores(),
                 achievementDao.observeUnlockedCount()
-            ) { trainer, caught, scores, unlockedCount ->
+            ) { trainer, themeMode, caught, scores, unlockedCount ->
                 val totalCorrect = scores.sumOf { it.correctCount }
                 val bestStreak = scores.map { it.bestStreak }.maxOrNull() ?: 0
                 val gamesPlayed = scores.size
@@ -57,6 +61,7 @@ class ProfileViewModel @Inject constructor(
                 ProfileUiState(
                     isLoading = false,
                     trainerData = trainer,
+                    themeMode = themeMode,
                     currentLevelBaseXp = currentBaseXp,
                     nextLevelXp = nextLvlXp,
                     caughtCount = caught,
@@ -80,6 +85,23 @@ class ProfileViewModel @Inject constructor(
     fun setHapticEnabled(enabled: Boolean) {
         viewModelScope.launch {
             trainerPreferencesRepository.setHapticEnabled(enabled)
+        }
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        viewModelScope.launch {
+            themePreferencesRepository.setThemeMode(mode)
+        }
+    }
+
+    fun toggleThemeMode() {
+        viewModelScope.launch {
+            val nextMode = when (_uiState.value.themeMode) {
+                AppThemeMode.LIGHT -> AppThemeMode.DARK
+                AppThemeMode.DARK -> AppThemeMode.LIGHT
+                AppThemeMode.SYSTEM -> AppThemeMode.LIGHT
+            }
+            themePreferencesRepository.setThemeMode(nextMode)
         }
     }
 }

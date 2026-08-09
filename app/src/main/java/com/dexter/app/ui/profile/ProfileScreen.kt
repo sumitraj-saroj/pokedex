@@ -23,11 +23,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CatchingPokemon
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -67,6 +71,9 @@ import com.dexter.app.data.repository.TrainerData
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Switch
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -75,6 +82,7 @@ fun ProfileScreen(
     onAchievementsClick: () -> Unit,
     onAvatarSelect: (Int) -> Unit = {},
     onHapticToggle: (Boolean) -> Unit = {},
+    onThemeSelect: (com.dexter.app.data.repository.AppThemeMode) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showAvatarPicker by remember { mutableStateOf(false) }
@@ -84,18 +92,15 @@ fun ProfileScreen(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
+            com.dexter.app.ui.common.GlassmorphicTopAppBar(
                 title = {
-                    Text("Trainer Profile", fontWeight = FontWeight.Bold)
+                    Text("Trainer Profile", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                }
             )
         }
     ) { innerPadding ->
@@ -120,7 +125,8 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 100.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Profile Card Header
@@ -231,13 +237,14 @@ fun ProfileScreen(
             }
 
             // Daily Login Streak Card
+            val isDark = com.dexter.app.ui.theme.LocalDarkTheme.current
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFFFF3E0)
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surfaceContainerHigh else Color(0xFFFFF3E0)
                 )
             ) {
                 Row(
@@ -249,7 +256,7 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.Default.LocalFireDepartment,
                         contentDescription = "Streak",
-                        tint = Color(0xFFE65100),
+                        tint = if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100),
                         modifier = Modifier.size(36.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -257,13 +264,13 @@ fun ProfileScreen(
                         Text(
                             text = "Daily Login Streak",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFFE65100)
+                            color = if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
                         )
                         Text(
                             text = "${trainer.loginStreak} Day${if (trainer.loginStreak != 1) "s" else ""}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFBF360C)
+                            color = if (isDark) MaterialTheme.colorScheme.onSurface else Color(0xFFBF360C)
                         )
                     }
                 }
@@ -280,14 +287,11 @@ fun ProfileScreen(
                     .padding(vertical = 4.dp)
             )
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 6.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                item {
+                Box(modifier = Modifier.weight(1f)) {
                     StatCard(
                         icon = Icons.Default.CatchingPokemon,
                         title = "Pokémon Caught",
@@ -295,7 +299,7 @@ fun ProfileScreen(
                         accentColor = MaterialTheme.colorScheme.primary
                     )
                 }
-                item {
+                Box(modifier = Modifier.weight(1f)) {
                     StatCard(
                         icon = Icons.Default.Psychology,
                         title = "Quiz Correct",
@@ -303,7 +307,15 @@ fun ProfileScreen(
                         accentColor = Color(0xFF9C27B0)
                     )
                 }
-                item {
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
                     StatCard(
                         icon = Icons.Default.Star,
                         title = "Best Quiz Streak",
@@ -311,7 +323,7 @@ fun ProfileScreen(
                         accentColor = Color(0xFFFF9800)
                     )
                 }
-                item {
+                Box(modifier = Modifier.weight(1f)) {
                     StatCard(
                         icon = Icons.Default.EmojiEvents,
                         title = "Badges Unlocked",
@@ -344,7 +356,7 @@ fun ProfileScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 4.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -386,6 +398,79 @@ fun ProfileScreen(
                             onHapticToggle(checked)
                         }
                     )
+                }
+            }
+
+            // App Theme Preference Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = "App Theme",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "App Theme",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Choose Light, Dark, or System theme",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val themeOptions = listOf(
+                            com.dexter.app.data.repository.AppThemeMode.LIGHT to "Light",
+                            com.dexter.app.data.repository.AppThemeMode.DARK to "Dark",
+                            com.dexter.app.data.repository.AppThemeMode.SYSTEM to "System"
+                        )
+                        themeOptions.forEach { (mode, label) ->
+                            val isSelected = uiState.themeMode == mode
+                            androidx.compose.material3.FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    haptics.lightClick()
+                                    onThemeSelect(mode)
+                                },
+                                label = { Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = when (mode) {
+                                            com.dexter.app.data.repository.AppThemeMode.LIGHT -> Icons.Default.LightMode
+                                            com.dexter.app.data.repository.AppThemeMode.DARK -> Icons.Default.DarkMode
+                                            com.dexter.app.data.repository.AppThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
+                                        },
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
             }
         }
