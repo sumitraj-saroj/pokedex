@@ -1,10 +1,15 @@
 package com.dexter.app.ui.detail
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import com.dexter.app.ui.common.bounceOnStateChange
+import com.dexter.app.ui.common.spatialExpressiveSpring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -63,7 +68,7 @@ import com.dexter.app.ui.theme.StatNumberStyle
 import com.dexter.app.ui.theme.animateColorSchemeAsState
 import com.dexter.app.ui.theme.rememberTypeColorScheme
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun DetailScreen(
     uiState: DetailUiState,
@@ -73,7 +78,9 @@ fun DetailScreen(
     onVariantSelected: (PokemonVariant) -> Unit,
     onPokemonClick: (Int) -> Unit,
     onRetryTcgCards: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val basePokemon = uiState.pokemon
 
@@ -102,11 +109,7 @@ fun DetailScreen(
         PokemonVariant.buildVariantsForPokemon(basePokemon, uiState.forms)
     }
 
-    val isDark = when (uiState.themeMode) {
-        AppThemeMode.LIGHT -> false
-        AppThemeMode.DARK -> true
-        AppThemeMode.SYSTEM -> isSystemInDarkTheme()
-    }
+    val isDark = com.dexter.app.ui.theme.LocalDarkTheme.current
 
     val targetTypeColorScheme = rememberTypeColorScheme(
         primaryType = activePrimaryType,
@@ -116,18 +119,19 @@ fun DetailScreen(
 
     val animatedColorScheme = animateColorSchemeAsState(targetColorScheme = targetTypeColorScheme)
 
-    MaterialExpressiveTheme(
-        colorScheme = animatedColorScheme,
-        motionScheme = MotionScheme.expressive()
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.dexter.app.ui.theme.LocalDarkTheme provides isDark
     ) {
+        MaterialExpressiveTheme(
+            colorScheme = animatedColorScheme,
+            motionScheme = MotionScheme.expressive()
+        ) {
         Scaffold(
             modifier = modifier.fillMaxSize(),
             contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             topBar = {
                 val hapticUtils = com.dexter.app.ui.common.rememberHapticUtils()
-                TopAppBar(
-                    modifier = Modifier.height(48.dp),
-                    windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+                com.dexter.app.ui.common.GlassmorphicTopAppBar(
                     title = {
                         Text(
                             text = basePokemon.formattedNumber,
@@ -165,7 +169,8 @@ fun DetailScreen(
                                         MaterialTheme.colorScheme.primary
                                     } else {
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                    }
+                                    },
+                                    modifier = Modifier.bounceOnStateChange(basePokemon.collection?.isCaught == true)
                                 )
                             }
                             IconButton(
@@ -186,14 +191,12 @@ fun DetailScreen(
                                         Color.Red
                                     } else {
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                    }
+                                    },
+                                    modifier = Modifier.bounceOnStateChange(basePokemon.collection?.isFavorite == true)
                                 )
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    }
                 )
             }
         ) { innerPadding ->
@@ -203,63 +206,40 @@ fun DetailScreen(
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Header Artwork Card with Radial Gradient & Pokéball Watermark
+                // Interactive 3D Multi-Layered Holographic Header Trading Card
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = Dimens.ScreenEdgePadding, vertical = Dimens.Tight)
                 ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1.1f),
-                        shape = RoundedCornerShape(Dimens.Section),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationLevel2)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
-                                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f),
-                                            MaterialTheme.colorScheme.surfaceContainer
-                                        )
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            // Subtle Pokéball Watermark
-                            Icon(
-                                imageVector = Icons.Default.CatchingPokemon,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                                modifier = Modifier.size(240.dp)
+                    val cardModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                        with(sharedTransitionScope) {
+                            Modifier.sharedBounds(
+                                rememberSharedContentState(key = "pokemon_card_${basePokemon.id}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = spatialExpressiveSpring()
                             )
-
-                            AnimatedContent(
-                                targetState = activeArtworkUrl,
-                                transitionSpec = {
-                                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                                },
-                                label = "MainArtworkCrossfade"
-                            ) { targetUrl ->
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(targetUrl)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = activeName,
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(Dimens.Section)
-                                )
-                            }
                         }
+                    } else {
+                        Modifier
                     }
+
+                    val isSpecialPokemon = basePokemon.isLegendary || basePokemon.isMythical || selectedVariant != PokemonVariant.Official
+
+                    Interactive3DTradingCard(
+                        pokemon = basePokemon,
+                        activeName = activeName,
+                        activeArtworkUrl = activeArtworkUrl,
+                        activePrimaryType = activePrimaryType,
+                        activeSecondaryType = activeSecondaryType,
+                        activeStats = activeStats,
+                        activeHeightM = activeHeightM,
+                        activeWeightKg = activeWeightKg,
+                        isSpecialPokemon = isSpecialPokemon,
+                        modifier = cardModifier,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
                 }
 
                 // Name & Category
@@ -435,4 +415,5 @@ fun DetailScreen(
             }
         }
     }
+}
 }

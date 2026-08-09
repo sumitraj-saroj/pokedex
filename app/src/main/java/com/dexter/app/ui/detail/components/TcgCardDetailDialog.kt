@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -34,8 +33,6 @@ import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.domain.model.TcgCard
-import com.dexter.app.ui.common.interactive3DCardEffect
-import com.dexter.app.ui.common.rememberTiltSensorState
 import com.dexter.app.ui.common.shimmerLoadingAnimation
 import com.dexter.app.ui.theme.Dimens
 
@@ -44,8 +41,6 @@ fun TcgCardDetailDialog(
     card: TcgCard,
     onDismissRequest: () -> Unit
 ) {
-    val tiltState = rememberTiltSensorState()
-
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -71,15 +66,6 @@ fun TcgCardDetailDialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ScreenRotation,
-                        contentDescription = "Gyro Interactive Preview",
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        modifier = Modifier.size(20.dp)
-                    )
-
-                    Spacer(modifier = Modifier.size(Dimens.Micro))
-
                     Text(
                         text = card.name,
                         style = MaterialTheme.typography.titleLarge,
@@ -102,19 +88,19 @@ fun TcgCardDetailDialog(
 
                 Spacer(modifier = Modifier.height(Dimens.Tight))
 
-                // Interactive 3D perspective container with sensor/touch-driven holographic foil sheen
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(0.727f) // TCG Card Aspect Ratio ~ 600x825
                         .clip(RoundedCornerShape(Dimens.Default))
-                        .interactive3DCardEffect(tiltState = tiltState, enableTouchDrag = true)
                 ) {
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(card.highResImageUrl.ifBlank { card.lowResImageUrl })
                             .placeholderMemoryCacheKey(card.id)
                             .crossfade(300)
+                            .precision(coil.size.Precision.EXACT)
+                            .memoryCacheKey("${card.id}_high")
                             .diskCacheKey("${card.id}_high")
                             .build(),
                         contentDescription = "${card.name} High Resolution TCG Card",

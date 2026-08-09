@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -52,11 +53,11 @@ class DetailViewModel @Inject constructor(
         } else {
             flowOf(emptyList())
         }
-    }
+    }.onStart { emit(emptyList()) }
 
-    private val movesFlow = pokemonRepository.observeMovesForPokemon(pokemonId)
-    private val abilitiesFlow = pokemonRepository.observeAbilitiesForPokemon(pokemonId)
-    private val formsFlow = pokemonRepository.observeFormsForPokemon(pokemonId)
+    private val movesFlow = pokemonRepository.observeMovesForPokemon(pokemonId).onStart { emit(emptyList()) }
+    private val abilitiesFlow = pokemonRepository.observeAbilitiesForPokemon(pokemonId).onStart { emit(emptyList()) }
+    private val formsFlow = pokemonRepository.observeFormsForPokemon(pokemonId).onStart { emit(emptyList()) }
 
     private val tcgCardsFlow: Flow<TcgCardsUiState> = combine(pokemonFlow, _retryTcgCardsTrigger) { pokemon, _ -> pokemon }
         .flatMapLatest { pokemon ->
@@ -73,7 +74,7 @@ class DetailViewModel @Inject constructor(
                     }
                 }
             }
-        }
+        }.onStart { emit(TcgCardsUiState.Loading) }
 
     val uiState: StateFlow<DetailUiState> = combine(
         pokemonFlow,

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.domain.model.TcgCard
@@ -88,21 +89,37 @@ fun TcgCardItem(
         ) {
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(card.lowResImageUrl.ifBlank { card.highResImageUrl })
+                    .data(card.highResImageUrl.ifBlank { card.lowResImageUrl })
                     .crossfade(true)
-                    .memoryCacheKey(card.id)
-                    .diskCacheKey(card.id)
+                    .precision(coil.size.Precision.EXACT)
+                    .memoryCacheKey("${card.id}_high")
+                    .diskCacheKey("${card.id}_high")
                     .build(),
                 contentDescription = "${card.name} TCG Card",
                 contentScale = ContentScale.Fit,
                 loading = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.72f)
-                            .clip(RoundedCornerShape(Dimens.Compact))
-                            .shimmerLoadingAnimation()
-                    )
+                    if (card.lowResImageUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(card.lowResImageUrl)
+                                .memoryCacheKey(card.id)
+                                .build(),
+                            contentDescription = "${card.name} Preview",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.72f)
+                                .clip(RoundedCornerShape(Dimens.Compact))
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(0.72f)
+                                .clip(RoundedCornerShape(Dimens.Compact))
+                                .shimmerLoadingAnimation()
+                        )
+                    }
                 },
                 error = {
                     Box(

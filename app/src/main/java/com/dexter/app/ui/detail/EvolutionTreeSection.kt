@@ -1,7 +1,14 @@
 package com.dexter.app.ui.detail
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,19 +31,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.domain.model.EvolutionNode
 import com.dexter.app.ui.theme.Dimens
+import com.dexter.app.ui.theme.StatNumberStyle
 
 @Composable
 fun EvolutionTreeSection(
@@ -120,6 +138,10 @@ private fun EvolutionLineRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Dimens.Compact))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                shape = RoundedCornerShape(Dimens.Compact)
+            )
             .padding(vertical = Dimens.Tight, horizontal = Dimens.Micro),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -130,7 +152,10 @@ private fun EvolutionLineRow(
             modifier = Modifier.weight(1f)
         )
 
-        ConditionArrow(conditionText = middle.conditionText)
+        EvolutionFlowConnector(
+            conditionText = middle.conditionText,
+            modifier = Modifier.width(52.dp)
+        )
 
         EvolutionCard(
             node = middle,
@@ -139,7 +164,10 @@ private fun EvolutionLineRow(
         )
 
         if (finalNode != null) {
-            ConditionArrow(conditionText = finalNode.conditionText)
+            EvolutionFlowConnector(
+                conditionText = finalNode.conditionText,
+                modifier = Modifier.width(52.dp)
+            )
             EvolutionCard(
                 node = finalNode,
                 onClick = { onPokemonClick(finalNode.speciesId) },
@@ -156,21 +184,50 @@ private fun EvolutionCard(
     modifier: Modifier = Modifier
 ) {
     val haptics = com.dexter.app.ui.common.rememberHapticUtils()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.94f else 1f,
+        animationSpec = spring(stiffness = 400f),
+        label = "EvolutionCardScale"
+    )
+
     Column(
         modifier = modifier
             .defaultMinSize(minHeight = Dimens.MinTouchTarget)
-            .clip(RoundedCornerShape(Dimens.Tight))
-            .clickable(onClick = {
-                haptics.selectionTick()
-                onClick()
-            })
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(RoundedCornerShape(Dimens.Compact))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    haptics.selectionTick()
+                    onClick()
+                }
+            )
             .padding(Dimens.Micro),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .background(MaterialTheme.colorScheme.surface, CircleShape),
+                .size(52.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    ),
+                    shape = CircleShape
+                )
+                .border(
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                    shape = CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
@@ -180,7 +237,7 @@ private fun EvolutionCard(
                     .build(),
                 contentDescription = node.speciesName,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.size(38.dp)
+                modifier = Modifier.size(42.dp)
             )
         }
         Spacer(modifier = Modifier.height(Dimens.Micro))
@@ -193,38 +250,73 @@ private fun EvolutionCard(
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface
         )
+        Text(
+            text = "#${node.speciesId.toString().padStart(4, '0')}",
+            style = StatNumberStyle.copy(fontSize = 9.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+        )
     }
 }
 
 @Composable
-private fun ConditionArrow(conditionText: String) {
+private fun EvolutionFlowConnector(
+    conditionText: String,
+    modifier: Modifier = Modifier
+) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(horizontal = 2.dp)
+        modifier = modifier.padding(horizontal = 2.dp)
     ) {
         if (conditionText.isNotBlank()) {
             Surface(
-                shape = RoundedCornerShape(Dimens.Tight),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),
+                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f)),
+                shadowElevation = 2.dp,
                 modifier = Modifier.padding(bottom = Dimens.Micro / 2)
             ) {
                 Text(
                     text = conditionText,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = MaterialTheme.typography.labelSmall.fontSize * 0.85f),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     textAlign = TextAlign.Center
                 )
             }
         }
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = "Evolves to",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(16.dp)
-        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxWidth().height(2.dp)) {
+                val startY = size.height / 2f
+                drawLine(
+                    color = primaryColor.copy(alpha = 0.6f),
+                    start = Offset(0f, startY),
+                    end = Offset(size.width, startY),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "Evolves to",
+                tint = primaryColor,
+                modifier = Modifier
+                    .size(14.dp)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
+            )
+        }
     }
 }

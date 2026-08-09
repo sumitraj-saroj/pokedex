@@ -67,6 +67,7 @@ interface PokemonRepository {
     suspend fun setTeamMember(slot: Int, pokemonId: Int)
     suspend fun removeTeamMember(slot: Int)
     suspend fun clearTeam()
+    suspend fun swapTeamSlots(fromSlot: Int, toSlot: Int)
     suspend fun ensurePokemonDetailExtras(pokemonId: Int)
     suspend fun syncPokemonData(forceResync: Boolean = false)
     suspend fun toggleCaught(pokemonId: Int, isCaught: Boolean)
@@ -157,82 +158,84 @@ class PokemonRepositoryImpl @Inject constructor(
                     }
                 }
 
-                // 2. Process Abilities
-                val abilitiesList = detail.abilities.map { slotDto ->
-                    val abilityName = slotDto.ability.name
-                    val effectText = try {
-                        val abilityRes = pokeApiService.getAbilityDetail(abilityName)
-                        abilityRes.effectEntries.firstOrNull { it.language.name == "en" }?.shortEffect
-                            ?: abilityRes.flavorTextEntries.firstOrNull { it.language.name == "en" }?.flavorText
-                            ?: "No description available."
-                    } catch (e: Exception) {
-                        "No description available."
-                    }
-                    PokemonAbilityEntity(
-                        id = "${pokemonId}_$abilityName",
-                        pokemonId = pokemonId,
-                        abilityName = abilityName,
-                        displayName = abilityName.replace("-", " ").titlecaseWords(),
-                        isHidden = slotDto.isHidden,
-                        effectText = effectText.replace('\n', ' ').replace('\u000c', ' ').trim()
-                    )
+                // 2. Process Abilities concurrently
+                val abilitiesList = coroutineScope {
+                    detail.abilities.map { slotDto ->
+                        async(Dispatchers.IO) {
+                            val abilityName = slotDto.ability.name
+                            val effectText = try {
+                                val abilityRes = pokeApiService.getAbilityDetail(abilityName)
+                                abilityRes.effectEntries.firstOrNull { it.language.name == "en" }?.shortEffect
+                                    ?: abilityRes.flavorTextEntries.firstOrNull { it.language.name == "en" }?.flavorText
+                                    ?: "No description available."
+                            } catch (e: Exception) {
+                                "No description available."
+                            }
+                            PokemonAbilityEntity(
+                                id = "${pokemonId}_$abilityName",
+                                pokemonId = pokemonId,
+                                abilityName = abilityName,
+                                displayName = abilityName.replace("-", " ").titlecaseWords(),
+                                isHidden = slotDto.isHidden,
+                                effectText = effectText.replace('\n', ' ').replace('\u000c', ' ').trim()
+                            )
+                        }
+                    }.awaitAll()
                 }
                 pokemonAbilityDao.insertAbilities(abilitiesList)
 
-                // 3. Process Moves (Limit to first 30 level-up / TM moves for fast loading)
-                val moveEntities = mutableListOf<PokemonMoveEntity>()
-                val moveDetailEntities = mutableListOf<MoveDetailEntity>()
-
-                detail.moves.take(30).forEach { moveSlot ->
+                // 3. Process Moves (Limit to first 30 level-up / TM moves, fetch concurrently)
+                val targetMoves = detail.moves.take(30)
+                val moveEntities = targetMoves.map { moveSlot ->
                     val moveName = moveSlot.move.name
                     val firstVersion = moveSlot.versionGroupDetails.firstOrNull()
                     val learnMethod = firstVersion?.moveLearnMethod?.name ?: "level-up"
                     val levelLearned = firstVersion?.levelLearnedAt ?: 0
 
-                    moveEntities.add(
-                        PokemonMoveEntity(
-                            id = "${pokemonId}_$moveName",
-                            pokemonId = pokemonId,
-                            moveName = moveName,
-                            learnMethod = learnMethod,
-                            levelLearnedAt = levelLearned
-                        )
+                    PokemonMoveEntity(
+                        id = "${pokemonId}_$moveName",
+                        pokemonId = pokemonId,
+                        moveName = moveName,
+                        learnMethod = learnMethod,
+                        levelLearnedAt = levelLearned
                     )
+                }
+                pokemonMoveDao.insertPokemonMoves(moveEntities)
 
-                    try {
-                        val moveRes = pokeApiService.getMoveDetail(moveName)
-                        val effect = moveRes.effectEntries.firstOrNull { it.language.name == "en" }?.shortEffect
-                            ?: moveRes.flavorTextEntries.firstOrNull { it.language.name == "en" }?.flavorText
-                            ?: "No effect description."
+                val moveDetailEntities = coroutineScope {
+                    targetMoves.map { moveSlot ->
+                        async(Dispatchers.IO) {
+                            val moveName = moveSlot.move.name
+                            try {
+                                val moveRes = pokeApiService.getMoveDetail(moveName)
+                                val effect = moveRes.effectEntries.firstOrNull { it.language.name == "en" }?.shortEffect
+                                    ?: moveRes.flavorTextEntries.firstOrNull { it.language.name == "en" }?.flavorText
+                                    ?: "No effect description."
 
-                        moveDetailEntities.add(
-                            MoveDetailEntity(
-                                moveName = moveName,
-                                displayName = moveName.replace("-", " ").titlecaseWords(),
-                                type = moveRes.type.name,
-                                power = moveRes.power,
-                                accuracy = moveRes.accuracy,
-                                damageClass = moveRes.damageClass?.name ?: "physical",
-                                effectText = effect.replace('\n', ' ').replace('\u000c', ' ').trim()
-                            )
-                        )
-                    } catch (e: Exception) {
-                        // fallback if move detail endpoint fails
-                        moveDetailEntities.add(
-                            MoveDetailEntity(
-                                moveName = moveName,
-                                displayName = moveName.replace("-", " ").titlecaseWords(),
-                                type = "normal",
-                                power = null,
-                                accuracy = null,
-                                damageClass = "physical",
-                                effectText = "No details available."
-                            )
-                        )
-                    }
+                                MoveDetailEntity(
+                                    moveName = moveName,
+                                    displayName = moveName.replace("-", " ").titlecaseWords(),
+                                    type = moveRes.type.name,
+                                    power = moveRes.power,
+                                    accuracy = moveRes.accuracy,
+                                    damageClass = moveRes.damageClass?.name ?: "physical",
+                                    effectText = effect.replace('\n', ' ').replace('\u000c', ' ').trim()
+                                )
+                            } catch (e: Exception) {
+                                MoveDetailEntity(
+                                    moveName = moveName,
+                                    displayName = moveName.replace("-", " ").titlecaseWords(),
+                                    type = "normal",
+                                    power = null,
+                                    accuracy = null,
+                                    damageClass = "physical",
+                                    effectText = "No details available."
+                                )
+                            }
+                        }
+                    }.awaitAll()
                 }
                 pokemonMoveDao.insertMoveDetails(moveDetailEntities)
-                pokemonMoveDao.insertPokemonMoves(moveEntities)
 
                 // 4. Process Form Varieties (Alolan, Galarian, Mega, etc.)
                 if (species != null && species.varieties.isNotEmpty()) {
@@ -292,8 +295,7 @@ class PokemonRepositoryImpl @Inject constructor(
                 }
 
                 val existingCount = pokemonDao.getPokemonCount()
-                val totalMovesCount = pokemonMoveDao.getTotalMoveCount()
-                if (existingCount >= 1025 && totalMovesCount > 0) {
+                if (existingCount > 0) {
                     context.syncDataStore.edit { it[INITIAL_SYNC_COMPLETED_KEY] = true }
                     _syncState.value = SyncState.Completed
                     return@withContext
@@ -312,12 +314,8 @@ class PokemonRepositoryImpl @Inject constructor(
                 val abilityEffectCache = ConcurrentHashMap<String, String>()
                 val moveDetailCache = ConcurrentHashMap<String, MoveDetailEntity>()
 
-                val imageLoader = context.imageLoader
                 fun preCacheImage(url: String?) {
-                    if (!url.isNullOrBlank()) {
-                        val req = ImageRequest.Builder(context).data(url).build()
-                        imageLoader.enqueue(req)
-                    }
+                    // No-op: On-demand loading by AsyncImage prevents choking Coil thread pool
                 }
 
                 suspend fun getAbilityEffect(abilityName: String): String {
@@ -590,6 +588,27 @@ class PokemonRepositoryImpl @Inject constructor(
     override suspend fun clearTeam() {
         withContext(Dispatchers.IO) {
             teamMemberDao.clearTeam()
+        }
+    }
+
+    override suspend fun swapTeamSlots(fromSlot: Int, toSlot: Int) {
+        withContext(Dispatchers.IO) {
+            val members = teamMemberDao.observeTeamMembers().first().associateBy { it.slot }
+            val member1 = members[fromSlot]
+            val member2 = members[toSlot]
+
+            if (member1 == null && member2 == null) return@withContext
+
+            if (member1 != null && member2 != null) {
+                teamMemberDao.insertOrUpdateTeamMember(TeamMemberEntity(slot = fromSlot, pokemonId = member2.pokemonId))
+                teamMemberDao.insertOrUpdateTeamMember(TeamMemberEntity(slot = toSlot, pokemonId = member1.pokemonId))
+            } else if (member1 != null) {
+                teamMemberDao.deleteTeamMember(fromSlot)
+                teamMemberDao.insertOrUpdateTeamMember(TeamMemberEntity(slot = toSlot, pokemonId = member1.pokemonId))
+            } else if (member2 != null) {
+                teamMemberDao.deleteTeamMember(toSlot)
+                teamMemberDao.insertOrUpdateTeamMember(TeamMemberEntity(slot = fromSlot, pokemonId = member2.pokemonId))
+            }
         }
     }
 
