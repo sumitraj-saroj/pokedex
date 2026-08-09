@@ -1,5 +1,9 @@
 package com.dexter.app.ui.compare
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -16,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,7 +31,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -36,18 +38,26 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.domain.model.Pokemon
@@ -55,9 +65,16 @@ import com.dexter.app.domain.model.PokemonStats
 import com.dexter.app.ui.common.PokemonPickerBottomSheet
 import com.dexter.app.ui.common.TypeChip
 import com.dexter.app.ui.theme.Dimens
+import com.dexter.app.ui.theme.Hct
 import com.dexter.app.ui.theme.StatNumberStyle
 import com.dexter.app.ui.theme.blendTypeSeedColors
-import com.dexter.app.ui.theme.generateMaterial3ColorScheme
+import com.dexter.app.ui.theme.hctToColor
+import com.dexter.app.ui.theme.toHct
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+
+import com.dexter.app.ui.theme.LocalDarkTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -71,7 +88,7 @@ fun CompareScreen(
     modifier: Modifier = Modifier
 ) {
     val hapticUtils = com.dexter.app.ui.common.rememberHapticUtils()
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalDarkTheme.current
     val pkmnA = uiState.pokemonA
     val pkmnB = uiState.pokemonB
 
@@ -101,13 +118,19 @@ fun CompareScreen(
         )
     }
 
+    val (compareColorA, compareColorB) = remember(pkmnA, pkmnB) {
+        if (pkmnA != null && pkmnB != null) {
+            getDistinctCompareColors(pkmnA, pkmnB)
+        } else {
+            Pair(Color.Unspecified, Color.Unspecified)
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(48.dp),
-                windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+            com.dexter.app.ui.common.GlassmorphicTopAppBar(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -117,7 +140,7 @@ fun CompareScreen(
                             imageVector = Icons.AutoMirrored.Filled.CompareArrows,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                         Text(
                             text = "Compare Mode",
@@ -125,10 +148,7 @@ fun CompareScreen(
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { innerPadding ->
@@ -199,8 +219,18 @@ fun CompareScreen(
                     }
                 }
 
-                // 2. Base Stats Side-by-Side Comparison
+                // 2. Dual Overlaid Stat Radar Chart
                 if (pkmnA != null && pkmnB != null) {
+                    item {
+                        DualPokemonStatRadarCard(
+                            pokemonA = pkmnA,
+                            pokemonB = pkmnB,
+                            colorA = compareColorA,
+                            colorB = compareColorB
+                        )
+                    }
+
+                    // 3. Base Stats Side-by-Side Comparison & Deltas
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -226,18 +256,18 @@ fun CompareScreen(
                                 val statsA = pkmnA.stats ?: PokemonStats(0, 0, 0, 0, 0, 0)
                                 val statsB = pkmnB.stats ?: PokemonStats(0, 0, 0, 0, 0, 0)
 
-                                CompareStatRow(name = "HP", valA = statsA.hp, valB = statsB.hp)
-                                CompareStatRow(name = "Attack", valA = statsA.attack, valB = statsB.attack)
-                                CompareStatRow(name = "Defense", valA = statsA.defense, valB = statsB.defense)
-                                CompareStatRow(name = "Sp. Atk", valA = statsA.spAttack, valB = statsB.spAttack)
-                                CompareStatRow(name = "Sp. Def", valA = statsA.spDefense, valB = statsB.spDefense)
-                                CompareStatRow(name = "Speed", valA = statsA.speed, valB = statsB.speed)
-                                CompareStatRow(name = "Total", valA = statsA.total, valB = statsB.total, maxStat = 720)
+                                CompareStatRow(name = "HP", valA = statsA.hp, valB = statsB.hp, colorA = compareColorA, colorB = compareColorB)
+                                CompareStatRow(name = "Attack", valA = statsA.attack, valB = statsB.attack, colorA = compareColorA, colorB = compareColorB)
+                                CompareStatRow(name = "Defense", valA = statsA.defense, valB = statsB.defense, colorA = compareColorA, colorB = compareColorB)
+                                CompareStatRow(name = "Sp. Atk", valA = statsA.spAttack, valB = statsB.spAttack, colorA = compareColorA, colorB = compareColorB)
+                                CompareStatRow(name = "Sp. Def", valA = statsA.spDefense, valB = statsB.spDefense, colorA = compareColorA, colorB = compareColorB)
+                                CompareStatRow(name = "Speed", valA = statsA.speed, valB = statsB.speed, colorA = compareColorA, colorB = compareColorB)
+                                CompareStatRow(name = "Total", valA = statsA.total, valB = statsB.total, colorA = compareColorA, colorB = compareColorB, maxStat = 720)
                             }
                         }
                     }
 
-                    // 3. Physical Attributes & Type Comparison Card
+                    // 4. Physical Attributes & Type Comparison Card
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -293,6 +323,385 @@ fun CompareScreen(
             pokemonList = uiState.allPokemon,
             title = if (uiState.activePickerTarget == CompareTarget.POKEMON_A) "Select Pokémon A" else "Select Pokémon B"
         )
+    }
+}
+
+private fun getDistinctCompareColors(pkmnA: Pokemon, pkmnB: Pokemon): Pair<Color, Color> {
+    val rawA = blendTypeSeedColors(pkmnA.primaryType.seedColor, pkmnA.secondaryType?.seedColor)
+    val rawB = blendTypeSeedColors(pkmnB.primaryType.seedColor, pkmnB.secondaryType?.seedColor)
+
+    val diff = kotlin.math.abs(rawA.red - rawB.red) +
+            kotlin.math.abs(rawA.green - rawB.green) +
+            kotlin.math.abs(rawA.blue - rawB.blue)
+
+    val finalB = if (diff < 0.15f) {
+        val hctB = rawB.toHct()
+        hctToColor(Hct((hctB.hue + 45f) % 360f, hctB.chroma.coerceAtLeast(0.4f), hctB.tone))
+    } else {
+        rawB
+    }
+    return Pair(rawA, finalB)
+}
+
+@Composable
+private fun DualPokemonStatRadarCard(
+    pokemonA: Pokemon,
+    pokemonB: Pokemon,
+    colorA: Color,
+    colorB: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.Section),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationLevel2)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.ScreenEdgePadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Compact)
+        ) {
+            Text(
+                text = "STAT OVERLAY RADAR",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            // Legend Row with elegant pill chips for both Pokémon
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Pokémon A Legend Chip
+                Surface(
+                    shape = CircleShape,
+                    color = colorA.copy(alpha = 0.15f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, colorA.copy(alpha = 0.5f)),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(colorA)
+                        )
+                        Text(
+                            text = pokemonA.capitalizedName,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colorA,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Text(
+                    text = "VS",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(horizontal = Dimens.Micro)
+                )
+
+                // Pokémon B Legend Chip
+                Surface(
+                    shape = CircleShape,
+                    color = colorB.copy(alpha = 0.15f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, colorB.copy(alpha = 0.5f)),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(colorB)
+                        )
+                        Text(
+                            text = pokemonB.capitalizedName,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colorB,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            DualPokemonStatRadarChartCanvas(
+                pokemonA = pokemonA,
+                pokemonB = pokemonB,
+                colorA = colorA,
+                colorB = colorB,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Dimens.Micro)
+            )
+        }
+    }
+}
+
+@Composable
+fun DualPokemonStatRadarChartCanvas(
+    pokemonA: Pokemon,
+    pokemonB: Pokemon,
+    colorA: Color,
+    colorB: Color,
+    modifier: Modifier = Modifier,
+    maxStat: Int = 255
+) {
+    val statsA = remember(pokemonA) {
+        val s = pokemonA.stats ?: PokemonStats(0, 0, 0, 0, 0, 0)
+        listOf(s.hp, s.attack, s.defense, s.spAttack, s.spDefense, s.speed)
+    }
+    val statsB = remember(pokemonB) {
+        val s = pokemonB.stats ?: PokemonStats(0, 0, 0, 0, 0, 0)
+        listOf(s.hp, s.attack, s.defense, s.spAttack, s.spDefense, s.speed)
+    }
+
+    val statNames = listOf("HP", "ATK", "DEF", "SP.ATK", "SP.DEF", "SPEED")
+    val textMeasurer = rememberTextMeasurer()
+    val outlineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val animProgress = remember { Animatable(0f) }
+    LaunchedEffect(pokemonA.id, pokemonB.id) {
+        animProgress.snapTo(0f)
+        animProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 800, easing = EaseOutCubic)
+        )
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1.15f),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val outerRadius = (size.width.coerceAtMost(size.height) / 2f) * 0.65f
+            val numAxes = 6
+
+            fun getAngle(i: Int): Double = -PI / 2 + (i * 2 * PI / numAxes)
+
+            // 1. Draw 4 concentric background grid polygons (25%, 50%, 75%, 100%)
+            val gridLevels = listOf(0.25f, 0.50f, 0.75f, 1.00f)
+            for (level in gridLevels) {
+                val gridPath = Path()
+                val radiusAtLevel = outerRadius * level
+                for (i in 0 until numAxes) {
+                    val angle = getAngle(i)
+                    val x = center.x + (radiusAtLevel * cos(angle)).toFloat()
+                    val y = center.y + (radiusAtLevel * sin(angle)).toFloat()
+                    if (i == 0) gridPath.moveTo(x, y) else gridPath.lineTo(x, y)
+                }
+                gridPath.close()
+                drawPath(
+                    path = gridPath,
+                    color = outlineColor,
+                    style = Stroke(width = 1.dp.toPx())
+                )
+            }
+
+            // 2. Draw radial axis lines from center to outer radius
+            for (i in 0 until numAxes) {
+                val angle = getAngle(i)
+                val endX = center.x + (outerRadius * cos(angle)).toFloat()
+                val endY = center.y + (outerRadius * sin(angle)).toFloat()
+                drawLine(
+                    color = outlineColor,
+                    start = center,
+                    end = Offset(endX, endY),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+
+            val progress = animProgress.value
+
+            // 3. Draw Polygon A
+            val statPathA = Path()
+            val statVerticesA = ArrayList<Offset>(numAxes)
+            for (i in 0 until numAxes) {
+                val statValue = statsA.getOrElse(i) { 0 }
+                val ratio = (statValue.toFloat() / maxStat).coerceIn(0f, 1f) * progress
+                val radius = outerRadius * ratio
+                val angle = getAngle(i)
+                val x = center.x + (radius * cos(angle)).toFloat()
+                val y = center.y + (radius * sin(angle)).toFloat()
+                val vertex = Offset(x, y)
+                statVerticesA.add(vertex)
+                if (i == 0) statPathA.moveTo(x, y) else statPathA.lineTo(x, y)
+            }
+            statPathA.close()
+
+            drawPath(
+                path = statPathA,
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        colorA.copy(alpha = 0.45f),
+                        colorA.copy(alpha = 0.12f)
+                    ),
+                    center = center,
+                    radius = outerRadius * 1.1f
+                )
+            )
+            drawPath(
+                path = statPathA,
+                color = colorA,
+                style = Stroke(width = 2.5.dp.toPx())
+            )
+            for (vertex in statVerticesA) {
+                drawCircle(color = colorA, radius = 4.dp.toPx(), center = vertex)
+                drawCircle(color = Color.White.copy(alpha = 0.9f), radius = 1.5.dp.toPx(), center = vertex)
+            }
+
+            // 4. Draw Polygon B
+            val statPathB = Path()
+            val statVerticesB = ArrayList<Offset>(numAxes)
+            for (i in 0 until numAxes) {
+                val statValue = statsB.getOrElse(i) { 0 }
+                val ratio = (statValue.toFloat() / maxStat).coerceIn(0f, 1f) * progress
+                val radius = outerRadius * ratio
+                val angle = getAngle(i)
+                val x = center.x + (radius * cos(angle)).toFloat()
+                val y = center.y + (radius * sin(angle)).toFloat()
+                val vertex = Offset(x, y)
+                statVerticesB.add(vertex)
+                if (i == 0) statPathB.moveTo(x, y) else statPathB.lineTo(x, y)
+            }
+            statPathB.close()
+
+            drawPath(
+                path = statPathB,
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        colorB.copy(alpha = 0.45f),
+                        colorB.copy(alpha = 0.12f)
+                    ),
+                    center = center,
+                    radius = outerRadius * 1.1f
+                )
+            )
+            drawPath(
+                path = statPathB,
+                color = colorB,
+                style = Stroke(width = 2.5.dp.toPx())
+            )
+            for (vertex in statVerticesB) {
+                drawCircle(color = colorB, radius = 4.dp.toPx(), center = vertex)
+                drawCircle(color = Color.White.copy(alpha = 0.9f), radius = 1.5.dp.toPx(), center = vertex)
+            }
+
+            // 5. Draw Axis text labels and stat values at vertex endpoints
+            val labelRadius = outerRadius + 22.dp.toPx()
+            val labelStyle = TextStyle(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceVariantColor
+            )
+            val valStyleA = StatNumberStyle.copy(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = colorA
+            )
+            val valStyleB = StatNumberStyle.copy(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = colorB
+            )
+            val slashStyle = TextStyle(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Normal,
+                color = onSurfaceVariantColor
+            )
+
+            for (i in 0 until numAxes) {
+                val angle = getAngle(i)
+                val cosA = cos(angle)
+                val sinA = sin(angle)
+
+                val lx = center.x + (labelRadius * cosA).toFloat()
+                val ly = center.y + (labelRadius * sinA).toFloat()
+
+                val name = statNames.getOrElse(i) { "" }
+                val rawValA = statsA.getOrElse(i) { 0 }
+                val rawValB = statsB.getOrElse(i) { 0 }
+                val currentValA = (rawValA * progress).toInt()
+                val currentValB = (rawValB * progress).toInt()
+
+                val nameResult = textMeasurer.measure(name, style = labelStyle)
+                val valAResult = textMeasurer.measure(currentValA.toString(), style = valStyleA)
+                val slashResult = textMeasurer.measure(" / ", style = slashStyle)
+                val valBResult = textMeasurer.measure(currentValB.toString(), style = valStyleB)
+
+                val line2Width = valAResult.size.width + slashResult.size.width + valBResult.size.width
+                val line2Height = maxOf(valAResult.size.height, valBResult.size.height)
+                val totalWidth = maxOf(nameResult.size.width, line2Width)
+                val totalHeight = nameResult.size.height + line2Height
+
+                val tx = when {
+                    cosA > 0.3 -> lx
+                    cosA < -0.3 -> lx - totalWidth
+                    else -> lx - totalWidth / 2f
+                }
+
+                val ty = when {
+                    sinA > 0.3 -> ly
+                    sinA < -0.3 -> ly - totalHeight
+                    else -> ly - totalHeight / 2f
+                }
+
+                // Line 1: Name
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = name,
+                    topLeft = Offset(tx + (totalWidth - nameResult.size.width) / 2f, ty),
+                    style = labelStyle
+                )
+
+                // Line 2: Values (ValA / ValB)
+                val line2Top = ty + nameResult.size.height
+                val line2Left = tx + (totalWidth - line2Width) / 2f
+
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = currentValA.toString(),
+                    topLeft = Offset(line2Left, line2Top),
+                    style = valStyleA
+                )
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = " / ",
+                    topLeft = Offset(line2Left + valAResult.size.width, line2Top),
+                    style = slashStyle
+                )
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = currentValB.toString(),
+                    topLeft = Offset(line2Left + valAResult.size.width + slashResult.size.width, line2Top),
+                    style = valStyleB
+                )
+            }
+        }
     }
 }
 
@@ -416,13 +825,58 @@ private fun CompareSelectionCard(
 }
 
 @Composable
+private fun StatDeltaChip(
+    delta: Int,
+    modifier: Modifier = Modifier
+) {
+    val containerColor: Color
+    val textColor: Color
+    val textStr: String
+
+    when {
+        delta > 0 -> {
+            containerColor = Color(0xFF2E7D32).copy(alpha = 0.2f)
+            textColor = Color(0xFF4CAF50)
+            textStr = "+$delta"
+        }
+        delta < 0 -> {
+            containerColor = Color(0xFFC62828).copy(alpha = 0.2f)
+            textColor = Color(0xFFEF5350)
+            textStr = "$delta"
+        }
+        else -> {
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            textColor = MaterialTheme.colorScheme.onSurfaceVariant
+            textStr = "="
+        }
+    }
+
+    Surface(
+        shape = CircleShape,
+        color = containerColor,
+        modifier = modifier
+    ) {
+        Text(
+            text = textStr,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = textColor,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+    }
+}
+
+@Composable
 private fun CompareStatRow(
     name: String,
     valA: Int,
     valB: Int,
+    colorA: Color,
+    colorB: Color,
     maxStat: Int = 255
 ) {
-    val delta = valA - valB
+    val deltaA = valA - valB
+    val deltaB = valB - valA
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -442,25 +896,11 @@ private fun CompareStatRow(
                 Text(
                     text = valA.toString(),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (delta > 0) FontWeight.ExtraBold else FontWeight.Medium,
-                    color = if (delta > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    fontWeight = if (deltaA > 0) FontWeight.ExtraBold else FontWeight.Medium,
+                    color = if (deltaA > 0) colorA else MaterialTheme.colorScheme.onSurface
                 )
 
-                if (delta > 0) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.padding(start = 2.dp)
-                    ) {
-                        Text(
-                            text = "+$delta",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = Dimens.Micro, vertical = 1.dp)
-                        )
-                    }
-                }
+                StatDeltaChip(delta = deltaA)
             }
 
             // Stat Name in Center
@@ -476,27 +916,13 @@ private fun CompareStatRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.Micro)
             ) {
-                if (delta < 0) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.padding(end = 2.dp)
-                    ) {
-                        Text(
-                            text = "+${-delta}",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = Dimens.Micro, vertical = 1.dp)
-                        )
-                    }
-                }
+                StatDeltaChip(delta = deltaB)
 
                 Text(
                     text = valB.toString(),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (delta < 0) FontWeight.ExtraBold else FontWeight.Medium,
-                    color = if (delta < 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    fontWeight = if (deltaB > 0) FontWeight.ExtraBold else FontWeight.Medium,
+                    color = if (deltaB > 0) colorB else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -523,7 +949,7 @@ private fun CompareStatRow(
                         .fillMaxWidth(fraction = (valA.toFloat() / maxStat).coerceIn(0.05f, 1.0f))
                         .clip(RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp))
                         .background(
-                            if (delta > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            if (deltaA > 0) colorA else colorA.copy(alpha = 0.45f)
                         )
                 )
             }
@@ -543,7 +969,7 @@ private fun CompareStatRow(
                         .fillMaxWidth(fraction = (valB.toFloat() / maxStat).coerceIn(0.05f, 1.0f))
                         .clip(RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp))
                         .background(
-                            if (delta < 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            if (deltaB > 0) colorB else colorB.copy(alpha = 0.45f)
                         )
                 )
             }
@@ -587,3 +1013,4 @@ private fun AttributeCompareRow(
         )
     }
 }
+

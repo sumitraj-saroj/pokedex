@@ -107,12 +107,12 @@ fun FilterScreen(
                     pokemon.name.lowercase().contains(q) || pokemon.number.toString().contains(q)
                 }
 
-                val matchesGen = uiState.selectedGenerations.isEmpty() || uiState.selectedGenerations.contains(pokemon.generation)
+                val matchesGen = uiState.selectedGenerations.isEmpty() || uiState.selectedGenerations.contains(pokemon.effectiveGeneration)
                 
                 val matchesType = if (uiState.selectedTypes.isEmpty()) {
                     true
                 } else {
-                    uiState.selectedTypes.all { requiredType ->
+                    uiState.selectedTypes.any { requiredType ->
                         pokemon.primaryType == requiredType || pokemon.secondaryType == requiredType
                     }
                 }
@@ -143,7 +143,7 @@ fun FilterScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             Column {
-                TopAppBar(
+                com.dexter.app.ui.common.GlassmorphicTopAppBar(
                     title = {
                         Column {
                             Text(
@@ -187,10 +187,7 @@ fun FilterScreen(
                                 )
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
+                    }
                 )
 
                 // Compact M3 Tab Row

@@ -87,18 +87,15 @@ fun AchievementsScreen(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
+            com.dexter.app.ui.common.GlassmorphicTopAppBar(
                 title = {
-                    Text("Badges & Achievements", fontWeight = FontWeight.Bold)
+                    Text("Badges & Achievements", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                }
             )
         }
     ) { innerPadding ->

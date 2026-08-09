@@ -66,4 +66,11 @@ class TeamViewModel @Inject constructor(
             repository.clearTeam()
         }
     }
+
+    fun swapSlots(fromSlot: Int, toSlot: Int) {
+        if (fromSlot == toSlot) return
+        viewModelScope.launch {
+            repository.swapTeamSlots(fromSlot, toSlot)
+        }
+    }
 }
