@@ -8,13 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.dexter.app.R
 
-val OutfitFontFamily = FontFamily(
-    Font(R.font.outfit_regular, FontWeight.Normal),
-    Font(R.font.outfit_medium, FontWeight.Medium),
-    Font(R.font.outfit_semibold, FontWeight.SemiBold),
-    Font(R.font.outfit_bold, FontWeight.Bold),
-    Font(R.font.outfit_extrabold, FontWeight.ExtraBold),
-)
+val OutfitFontFamily = FontFamily.SansSerif
 
 val Typography = Typography(
     displaySmall = TextStyle(

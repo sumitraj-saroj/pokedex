@@ -35,13 +35,17 @@ class HapticUtils(
      */
     fun lightClick() {
         if (!isEnabled) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val performed = view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-            if (!performed) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val performed = view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                if (!performed) {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+            } else {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             }
-        } else {
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
@@ -54,13 +58,17 @@ class HapticUtils(
      */
     fun selectionTick() {
         if (!isEnabled) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val performed = view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-            if (!performed) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val performed = view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                if (!performed) {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                }
+            } else {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             }
-        } else {
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
@@ -69,13 +77,17 @@ class HapticUtils(
      */
     fun mediumImpact() {
         if (!isEnabled) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val performed = view.performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
-            if (!performed) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val performed = view.performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
+                if (!performed) {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                }
+            } else {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
             }
-        } else {
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
@@ -84,13 +96,17 @@ class HapticUtils(
      */
     fun heavyImpact() {
         if (!isEnabled) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val performed = view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            if (!performed) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val performed = view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                if (!performed) {
+                    vibrateOneShot(80, 255)
+                }
+            } else {
                 vibrateOneShot(80, 255)
             }
-        } else {
-            vibrateOneShot(80, 255)
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
@@ -99,13 +115,17 @@ class HapticUtils(
      */
     fun successPulse() {
         if (!isEnabled) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val performed = view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-            if (!performed) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val performed = view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                if (!performed) {
+                    vibrateWaveform(longArrayOf(0, 40, 60, 80), intArrayOf(0, 150, 0, 255))
+                }
+            } else {
                 vibrateWaveform(longArrayOf(0, 40, 60, 80), intArrayOf(0, 150, 0, 255))
             }
-        } else {
-            vibrateWaveform(longArrayOf(0, 40, 60, 80), intArrayOf(0, 150, 0, 255))
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
@@ -114,13 +134,17 @@ class HapticUtils(
      */
     fun errorPulse() {
         if (!isEnabled) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val performed = view.performHapticFeedback(HapticFeedbackConstants.REJECT)
-            if (!performed) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val performed = view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                if (!performed) {
+                    vibrateWaveform(longArrayOf(0, 60, 40, 60), intArrayOf(0, 200, 0, 200))
+                }
+            } else {
                 vibrateWaveform(longArrayOf(0, 60, 40, 60), intArrayOf(0, 200, 0, 200))
             }
-        } else {
-            vibrateWaveform(longArrayOf(0, 60, 40, 60), intArrayOf(0, 200, 0, 200))
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
@@ -129,35 +153,47 @@ class HapticUtils(
      */
     fun waveformPulse() {
         if (!isEnabled) return
-        vibrateWaveform(
-            longArrayOf(0, 50, 50, 50, 50, 120),
-            intArrayOf(0, 100, 0, 180, 0, 255)
-        )
+        try {
+            vibrateWaveform(
+                longArrayOf(0, 50, 50, 50, 50, 120),
+                intArrayOf(0, 100, 0, 180, 0, 255)
+            )
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
     }
 
     private fun vibrateOneShot(durationMs: Long, amplitude: Int) {
-        vibrator?.let { v ->
-            if (v.hasVibrator()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    v.vibrate(VibrationEffect.createOneShot(durationMs, amplitude.coerceIn(1, 255)))
-                } else {
-                    @Suppress("DEPRECATION")
-                    v.vibrate(durationMs)
+        try {
+            vibrator?.let { v ->
+                if (v.hasVibrator()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        v.vibrate(VibrationEffect.createOneShot(durationMs, amplitude.coerceIn(1, 255)))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        v.vibrate(durationMs)
+                    }
                 }
             }
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
     private fun vibrateWaveform(timings: LongArray, amplitudes: IntArray) {
-        vibrator?.let { v ->
-            if (v.hasVibrator()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    v.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
-                } else {
-                    @Suppress("DEPRECATION")
-                    v.vibrate(timings, -1)
+        try {
+            vibrator?.let { v ->
+                if (v.hasVibrator()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        v.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        v.vibrate(timings, -1)
+                    }
                 }
             }
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 }

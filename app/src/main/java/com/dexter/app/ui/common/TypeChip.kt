@@ -18,6 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dexter.app.domain.model.PokemonType
 import com.dexter.app.ui.theme.Dimens
 
@@ -47,11 +51,11 @@ fun TypeChip(
 
     Box(
         modifier = modifier
-            .defaultMinSize(minHeight = if (isCompact) Dimens.Micro * 6 else Dimens.MinTouchTarget / 1.7f)
+            .defaultMinSize(minHeight = if (isCompact) Dimens.Micro * 5.5f else Dimens.MinTouchTarget / 1.7f)
             .clip(RoundedCornerShape(cornerRadius))
             .background(type.seedColor)
             .padding(
-                horizontal = if (isCompact) Dimens.Tight else Dimens.Compact,
+                horizontal = if (isCompact) 4.dp else Dimens.Compact,
                 vertical = if (isCompact) Dimens.Micro else Dimens.Tight / 2
             ),
         contentAlignment = Alignment.Center
@@ -59,8 +63,11 @@ fun TypeChip(
         Text(
             text = type.typeName.uppercase(),
             color = textColor,
-            style = if (isCompact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.ExtraBold
+            style = if (isCompact) MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp) else MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
         )
     }
 }

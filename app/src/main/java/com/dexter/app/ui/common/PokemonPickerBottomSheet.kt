@@ -1,5 +1,6 @@
 package com.dexter.app.ui.common
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -36,7 +37,7 @@ import com.dexter.app.domain.model.PokemonType
 import com.dexter.app.ui.home.PokemonCardItem
 import com.dexter.app.ui.theme.Dimens
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun PokemonPickerBottomSheet(
     onDismissRequest: () -> Unit,
@@ -66,13 +67,13 @@ fun PokemonPickerBottomSheet(
                 val matchesGen = if (selectedGenerations.isEmpty()) {
                     true
                 } else {
-                    selectedGenerations.contains(pokemon.generation)
+                    selectedGenerations.contains(pokemon.effectiveGeneration)
                 }
 
                 val matchesType = if (selectedTypes.isEmpty()) {
                     true
                 } else {
-                    selectedTypes.all { requiredType ->
+                    selectedTypes.any { requiredType ->
                         pokemon.primaryType == requiredType || pokemon.secondaryType == requiredType
                     }
                 }

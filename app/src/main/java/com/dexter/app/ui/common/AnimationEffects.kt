@@ -1,88 +1,162 @@
 package com.dexter.app.ui.common
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.BoundsTransform
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Creates a smooth breathing Y-offset animation for floating artwork.
+ * Static Y-offset for floating artwork to prevent continuous recomposition lag.
  */
 @Composable
 fun rememberBreathingYOffset(
     maxOffsetDp: Dp = 8.dp,
     durationMillis: Int = 2400
 ): Dp {
-    val infiniteTransition = rememberInfiniteTransition(label = "BreathingTransition")
-    val progress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = durationMillis, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "BreathingYOffset"
-    )
-    return -maxOffsetDp * progress
+    return 0.dp
 }
 
 /**
- * Applies a dynamic holographic metallic shimmer foil overlay across a composable container.
+ * Holographic shimmer overlay (disabled continuous loop to optimize frame rate during scroll).
  */
 fun Modifier.holographicShimmer(
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    style: HoloFoilStyle = HoloFoilStyle.COSMIC_STARFOIL,
+    alphaMultiplier: Float = 1.0f,
+    shape: Shape = RoundedCornerShape(20.dp)
+): Modifier = this
+
+/**
+ * High-performance native clickable micro-interaction for cards and buttons.
+ */
+fun Modifier.bouncyClickable(
+    enabled: Boolean = true,
+    hapticUtils: HapticUtils? = null,
+    onClick: () -> Unit
 ): Modifier = composed {
     if (!enabled) return@composed this
 
-    val infiniteTransition = rememberInfiniteTransition(label = "HoloShimmerTransition")
-    val shimmerOffset by infiniteTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "HoloOffset"
+    this.clickable {
+        hapticUtils?.lightClick()
+        onClick()
+    }
+}
+
+/**
+ * Instant, crisp bounds transform for shared element transitions without spring bounce lag.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun spatialExpressiveSpring(): BoundsTransform = BoundsTransform { _, _ ->
+    spring(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessHigh
     )
+}
 
-    this.drawWithContent {
-        drawContent()
+/**
+ * Scale-bounce animation modifier for toggle buttons (caught, favorite).
+ * Provides a satisfying spring overshoot when state changes.
+ */
+@Composable
+fun Modifier.bounceOnStateChange(isActive: Boolean): Modifier = composed {
+    val scale by animateFloatAsState(
+        targetValue = if (isActive) 1f else 0.85f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "bounce_toggle_scale"
+    )
+    this.graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+    }
+}
 
-        val width = size.width
-        val height = size.height
-        val startX = width * shimmerOffset
-        val startY = height * (shimmerOffset * 0.5f)
+/**
+ * Press-to-shrink interaction modifier for cards and interactive containers.
+ * Gently scales down to 0.96 while pressed, snaps back on release with spring physics.
+ */
+@Composable
+fun Modifier.scaleOnPress(): Modifier = composed {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "press_scale"
+    )
+    this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    isPressed = true
+                    tryAwaitRelease()
+                    isPressed = false
+                }
+            )
+        }
+}
 
-        val holographicColors = listOf(
-            Color(0x00FFFFFF),
-            Color(0x33FFD700), // Gold
-            Color(0x44FF007F), // Pink
-            Color(0x4400E5FF), // Cyan
-            Color(0x449932CC), // Purple
-            Color(0x33FFD700), // Gold
-            Color(0x00FFFFFF)
-        )
-
-        drawRect(
-            brush = Brush.linearGradient(
-                colors = holographicColors,
-                start = Offset(startX, startY),
-                end = Offset(startX + width * 0.8f, startY + height * 0.8f)
-            ),
-            blendMode = BlendMode.Screen
+/**
+ * Animated section header that slides in from the left with a fade on first composition.
+ */
+@Composable
+fun AnimatedSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.titleMedium,
+    color: Color = MaterialTheme.colorScheme.onSurface
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(400)) + slideInHorizontally(
+            animationSpec = tween(400),
+            initialOffsetX = { -it / 4 }
+        ),
+        modifier = modifier
+    ) {
+        Text(
+            text = title,
+            style = style,
+            color = color,
+            fontWeight = FontWeight.Bold
         )
     }
 }
+
+

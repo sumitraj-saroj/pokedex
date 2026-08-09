@@ -1,5 +1,12 @@
 package com.dexter.app.ui.common
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.draw.scale
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,6 +42,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -167,6 +175,17 @@ fun SearchFilterBar(
                 }
             }
         }
+
+        // Inline Quick-Filter Chips Bar (Types, Special Categories, Generations)
+        QuickFilterChipsRow(
+            selectedGenerations = selectedGenerations,
+            onGenerationToggle = onGenerationToggle,
+            selectedTypes = selectedTypes,
+            onTypeToggle = onTypeToggle,
+            selectedSpecialCategories = selectedSpecialCategories,
+            onSpecialCategoryToggle = onSpecialCategoryToggle,
+            modifier = Modifier.padding(top = Dimens.Tight / 2)
+        )
 
         // Removable Active Filter Pills Row
         val haptics = com.dexter.app.ui.common.rememberHapticUtils()
@@ -337,3 +356,173 @@ fun SearchFilterBar(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun QuickFilterChipsRow(
+    selectedGenerations: Set<Int>,
+    onGenerationToggle: (Int) -> Unit,
+    selectedTypes: Set<PokemonType>,
+    onTypeToggle: (PokemonType) -> Unit,
+    selectedSpecialCategories: Set<SpecialCategory>,
+    onSpecialCategoryToggle: (SpecialCategory) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptics = com.dexter.app.ui.common.rememberHapticUtils()
+
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.Tight / 2),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Rapid Special Category Toggles (e.g. Legendary, Mythical, Starter, Pseudo-Legendary)
+        items(
+            items = SpecialCategory.entries.take(4),
+            key = { "cat_${it.name}" }
+        ) { category ->
+            val isSelected = selectedSpecialCategories.contains(category)
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1.05f else 1.0f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                label = "cat_scale"
+            )
+            val textColor = if (isSelected) {
+                if (category.chipColor.luminance() > 0.5f) Color.Black else Color.White
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            FilterChip(
+                selected = isSelected,
+                onClick = {
+                    haptics.lightTick()
+                    onSpecialCategoryToggle(category)
+                },
+                modifier = Modifier.scale(scale),
+                shape = CircleShape,
+                label = {
+                    Text(
+                        text = "${category.emoji} ${category.displayName}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                    )
+                },
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = category.chipColor,
+                    selectedLabelColor = textColor,
+                    selectedLeadingIconColor = textColor,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+
+        // Generation Shortcuts
+        items(
+            items = (1..9).toList(),
+            key = { "gen_$it" }
+        ) { gen ->
+            val isSelected = selectedGenerations.contains(gen)
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1.05f else 1.0f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                label = "gen_scale"
+            )
+
+            val romanGen = when (gen) {
+                1 -> "I"; 2 -> "II"; 3 -> "III"; 4 -> "IV"; 5 -> "V"
+                6 -> "VI"; 7 -> "VII"; 8 -> "VIII"; 9 -> "IX"; else -> "$gen"
+            }
+
+            FilterChip(
+                selected = isSelected,
+                onClick = {
+                    haptics.lightTick()
+                    onGenerationToggle(gen)
+                },
+                modifier = Modifier.scale(scale),
+                shape = CircleShape,
+                label = {
+                    Text(
+                        text = "Gen $romanGen",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                    )
+                },
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+
+        // All Element Types
+        items(
+            items = PokemonType.entries,
+            key = { "type_${it.typeName}" }
+        ) { type ->
+            val isSelected = selectedTypes.contains(type)
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1.05f else 1.0f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                label = "type_scale"
+            )
+            val textColor = if (isSelected) type.seedColor.contentColorForSeed() else MaterialTheme.colorScheme.onSurfaceVariant
+
+            FilterChip(
+                selected = isSelected,
+                onClick = {
+                    haptics.lightTick()
+                    onTypeToggle(type)
+                },
+                modifier = Modifier.scale(scale),
+                shape = CircleShape,
+                label = {
+                    Text(
+                        text = type.typeName.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                    )
+                },
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                } else null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = type.seedColor,
+                    selectedLabelColor = textColor,
+                    selectedLeadingIconColor = textColor,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+    }
+}
+
