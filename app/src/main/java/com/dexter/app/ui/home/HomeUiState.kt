@@ -23,6 +23,7 @@ enum class SortOrder(val displayName: String) {
 @Immutable
 data class HomeUiState(
     val pokemonList: List<Pokemon> = emptyList(),
+    val filteredList: List<Pokemon> = emptyList(),
     val syncState: SyncState = SyncState.Idle,
     val searchQuery: String = "",
     val sortOption: SortOption = SortOption.NUMBER,

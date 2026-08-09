@@ -1,7 +1,14 @@
 package com.dexter.app.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,14 +16,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,40 +47,47 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import com.dexter.app.ui.common.GlassmorphicTopAppBar
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.dexter.app.data.repository.AppThemeMode
 import com.dexter.app.domain.model.Pokemon
+import com.dexter.app.domain.model.SpecialCategory
 import com.dexter.app.domain.model.SyncState
 import com.dexter.app.ui.common.EmptySearchResultsState
 import com.dexter.app.ui.common.SearchFilterBar
 import com.dexter.app.ui.common.SkeletonPokemonCard
 import com.dexter.app.ui.common.SyncProgressScreen
-import com.dexter.app.ui.common.holographicShimmer
 import com.dexter.app.ui.common.TypeChip
+import com.dexter.app.ui.common.bouncyClickable
+import com.dexter.app.ui.common.holographicShimmer
+import com.dexter.app.ui.common.spatialExpressiveSpring
+import com.dexter.app.ui.filter.FilterBottomSheet
 import com.dexter.app.ui.theme.Dimens
 import com.dexter.app.ui.theme.StatNumberStyle
+import com.dexter.app.ui.theme.blendTypeSeedColors
 
-import com.dexter.app.domain.model.SpecialCategory
-
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import com.dexter.app.ui.filter.FilterBottomSheet
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
@@ -85,7 +103,10 @@ fun HomeScreen(
     onResyncClick: () -> Unit,
     onThemeToggleClick: () -> Unit,
     onProfileClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windowWidthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     var showFilterSheet by remember { mutableStateOf(false) }
 
@@ -102,68 +123,7 @@ fun HomeScreen(
         )
     }
 
-    val filteredList by remember(
-        uiState.pokemonList,
-        uiState.searchQuery,
-        uiState.sortOption,
-        uiState.sortOrder,
-        uiState.selectedGenerations,
-        uiState.selectedTypes,
-        uiState.selectedSpecialCategories
-    ) {
-        derivedStateOf {
-            val filtered = uiState.pokemonList.filter { pokemon ->
-                val matchesQuery = if (uiState.searchQuery.isBlank()) {
-                    true
-                } else {
-                    val q = uiState.searchQuery.trim().lowercase()
-                    val matchesName = pokemon.name.lowercase().contains(q)
-                    val matchesNumber = pokemon.number.toString().contains(q) || pokemon.formattedNumber.lowercase().contains(q)
-                    matchesName || matchesNumber
-                }
-
-                val matchesGen = if (uiState.selectedGenerations.isEmpty()) {
-                    true
-                } else {
-                    uiState.selectedGenerations.contains(pokemon.effectiveGeneration)
-                }
-
-                val matchesType = if (uiState.selectedTypes.isEmpty()) {
-                    true
-                } else {
-                    uiState.selectedTypes.any { requiredType ->
-                        pokemon.primaryType == requiredType || pokemon.secondaryType == requiredType
-                    }
-                }
-
-                val matchesSpecial = if (uiState.selectedSpecialCategories.isEmpty()) {
-                    true
-                } else {
-                    uiState.selectedSpecialCategories.any { category ->
-                        category.matches(pokemon)
-                    }
-                }
-
-                matchesQuery && matchesGen && matchesType && matchesSpecial
-            }
-
-            val comparator = Comparator<com.dexter.app.domain.model.Pokemon> { a, b ->
-                when (uiState.sortOption) {
-                    SortOption.NUMBER -> a.number.compareTo(b.number)
-                    SortOption.NAME -> a.name.compareTo(b.name, ignoreCase = true)
-                    SortOption.TOTAL_STATS -> (a.stats?.total ?: 0).compareTo(b.stats?.total ?: 0)
-                    SortOption.HEIGHT -> a.heightM.compareTo(b.heightM)
-                    SortOption.WEIGHT -> a.weightKg.compareTo(b.weightKg)
-                }
-            }
-
-            if (uiState.sortOrder == SortOrder.DESCENDING) {
-                filtered.sortedWith(comparator.reversed())
-            } else {
-                filtered.sortedWith(comparator)
-            }
-        }
-    }
+    val filteredList = uiState.filteredList
 
     if (uiState.syncState is SyncState.Syncing && uiState.pokemonList.isEmpty()) {
         SyncProgressScreen(
@@ -173,13 +133,120 @@ fun HomeScreen(
         return
     }
 
+    val isExpanded = windowWidthSizeClass == WindowWidthSizeClass.Expanded
+
+    if (isExpanded) {
+        val inspectorViewModel: InspectorViewModel = hiltViewModel()
+        val inspectorUiState by inspectorViewModel.uiState.collectAsStateWithLifecycle()
+        var selectedPokemonId by remember { mutableStateOf<Int?>(null) }
+
+        LaunchedEffect(filteredList) {
+            if (filteredList.isNotEmpty() && (selectedPokemonId == null || filteredList.none { it.id == selectedPokemonId })) {
+                val firstId = filteredList.first().id
+                selectedPokemonId = firstId
+                inspectorViewModel.selectPokemon(firstId)
+            }
+        }
+
+        Row(modifier = modifier.fillMaxSize()) {
+            // Left Pane (40% width): Scrollable search bar, quick filters, and Pokémon grid
+            Box(modifier = Modifier.weight(0.40f).fillMaxHeight()) {
+                HomeScreenListPane(
+                    uiState = uiState,
+                    filteredList = filteredList,
+                    selectedPokemonId = selectedPokemonId,
+                    onPokemonSelect = { pokemonId ->
+                        selectedPokemonId = pokemonId
+                        inspectorViewModel.selectPokemon(pokemonId)
+                    },
+                    onSearchQueryChange = onSearchQueryChange,
+                    onOpenFilterSheet = { showFilterSheet = true },
+                    onGenerationToggle = onGenerationToggle,
+                    onTypeToggle = onTypeToggle,
+                    onSpecialCategoryToggle = onSpecialCategoryToggle,
+                    onSortOptionReset = onSortOptionReset,
+                    onClearFilters = onClearFilters,
+                    onResyncClick = onResyncClick,
+                    onThemeToggleClick = onThemeToggleClick,
+                    onProfileClick = onProfileClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
+            }
+
+            // Divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            )
+
+            // Right Pane (60% width): Selected Pokémon Live Inspector
+            Box(modifier = Modifier.weight(0.60f).fillMaxHeight()) {
+                PokemonInspectorPane(
+                    uiState = inspectorUiState,
+                    onPokemonClick = { targetId ->
+                        selectedPokemonId = targetId
+                        inspectorViewModel.selectPokemon(targetId)
+                    },
+                    onToggleCaught = inspectorViewModel::toggleCaught,
+                    onToggleFavorite = inspectorViewModel::toggleFavorite,
+                    onVariantSelected = inspectorViewModel::selectVariant,
+                    onRetryTcgCards = inspectorViewModel::retryFetchTcgCards,
+                    onOpenFullScreen = { fullId -> onPokemonClick(fullId) }
+                )
+            }
+        }
+    } else {
+        HomeScreenListPane(
+            uiState = uiState,
+            filteredList = filteredList,
+            selectedPokemonId = null,
+            onPokemonSelect = { pokemonId -> onPokemonClick(pokemonId) },
+            onSearchQueryChange = onSearchQueryChange,
+            onOpenFilterSheet = { showFilterSheet = true },
+            onGenerationToggle = onGenerationToggle,
+            onTypeToggle = onTypeToggle,
+            onSpecialCategoryToggle = onSpecialCategoryToggle,
+            onSortOptionReset = onSortOptionReset,
+            onClearFilters = onClearFilters,
+            onResyncClick = onResyncClick,
+            onThemeToggleClick = onThemeToggleClick,
+            onProfileClick = onProfileClick,
+            modifier = modifier,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@Composable
+private fun HomeScreenListPane(
+    uiState: HomeUiState,
+    filteredList: List<Pokemon>,
+    selectedPokemonId: Int?,
+    onPokemonSelect: (Int) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onOpenFilterSheet: () -> Unit,
+    onGenerationToggle: (Int) -> Unit,
+    onTypeToggle: (com.dexter.app.domain.model.PokemonType) -> Unit,
+    onSpecialCategoryToggle: (SpecialCategory) -> Unit,
+    onSortOptionReset: () -> Unit,
+    onClearFilters: () -> Unit,
+    onResyncClick: () -> Unit,
+    onThemeToggleClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                modifier = Modifier.height(48.dp),
-                windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+            GlassmorphicTopAppBar(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -189,7 +256,7 @@ fun HomeScreen(
                             imageVector = Icons.Default.CatchingPokemon,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                         Text(
                             text = "Dexter",
@@ -239,10 +306,7 @@ fun HomeScreen(
                                 .clip(CircleShape)
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { innerPadding ->
@@ -254,7 +318,7 @@ fun HomeScreen(
             SearchFilterBar(
                 query = uiState.searchQuery,
                 onQueryChange = onSearchQueryChange,
-                onOpenFilterPage = { showFilterSheet = true },
+                onOpenFilterPage = onOpenFilterSheet,
                 selectedGenerations = uiState.selectedGenerations,
                 onGenerationToggle = onGenerationToggle,
                 selectedTypes = uiState.selectedTypes,
@@ -288,37 +352,56 @@ fun HomeScreen(
             } else {
                 val context = LocalContext.current
                 val imageLoader = remember { context.imageLoader }
+                val pokemonOfDay = remember(uiState.pokemonList) {
+                    if (uiState.pokemonList.isEmpty()) null
+                    else {
+                        val dayOfYear = java.time.LocalDate.now().dayOfYear
+                        val index = (dayOfYear * 37) % uiState.pokemonList.size
+                        uiState.pokemonList.getOrNull(index) ?: uiState.pokemonList.firstOrNull()
+                    }
+                }
+                val showHeroCard = uiState.searchQuery.isBlank() &&
+                        uiState.selectedTypes.isEmpty() &&
+                        uiState.selectedGenerations.isEmpty() &&
+                        uiState.selectedSpecialCategories.isEmpty()
 
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 130.dp),
-                    contentPadding = PaddingValues(Dimens.ScreenEdgePadding),
+                    contentPadding = PaddingValues(
+                        start = Dimens.ScreenEdgePadding,
+                        top = Dimens.ScreenEdgePadding,
+                        end = Dimens.ScreenEdgePadding,
+                        bottom = 80.dp
+                    ),
                     horizontalArrangement = Arrangement.spacedBy(Dimens.Compact),
                     verticalArrangement = Arrangement.spacedBy(Dimens.Compact),
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    if (showHeroCard && pokemonOfDay != null) {
+                        item(
+                            span = { GridItemSpan(maxLineSpan) },
+                            key = "hero_card_pokemon_of_the_day"
+                        ) {
+                            PokemonOfDayHeroCard(
+                                pokemon = pokemonOfDay,
+                                onClick = { onPokemonSelect(pokemonOfDay.id) },
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                modifier = Modifier.padding(bottom = Dimens.Tight / 2)
+                            )
+                        }
+                    }
+
                     items(
                         items = filteredList,
-                        key = { it.id }
+                        key = { pokemon -> pokemon.id }
                     ) { pokemon ->
-                        androidx.compose.runtime.LaunchedEffect(pokemon.id) {
-                            val currentIndex = filteredList.indexOf(pokemon)
-                            if (currentIndex >= 0) {
-                                for (i in 1..8) {
-                                    val nextPokemon = filteredList.getOrNull(currentIndex + i)
-                                    if (nextPokemon != null) {
-                                        val url = nextPokemon.officialArtworkUrl ?: nextPokemon.spriteUrl
-                                        if (!url.isNullOrEmpty()) {
-                                            val req = ImageRequest.Builder(context).data(url).build()
-                                            imageLoader.enqueue(req)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         PokemonCardItem(
                             pokemon = pokemon,
-                            onClick = { onPokemonClick(pokemon.id) }
+                            isSelected = selectedPokemonId == pokemon.id,
+                            onClick = { onPokemonSelect(pokemon.id) },
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope
                         )
                     }
                 }
@@ -327,29 +410,44 @@ fun HomeScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun PokemonCardItem(
     pokemon: Pokemon,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val haptics = com.dexter.app.ui.common.rememberHapticUtils()
-    val cardColor = pokemon.primaryType.seedColor.copy(alpha = 0.15f)
+    val primarySeed = pokemon.primaryType.seedColor
+    val blendedSeed = blendTypeSeedColors(primarySeed, pokemon.secondaryType?.seedColor)
+    val cardGradient = Brush.verticalGradient(
+        colors = listOf(
+            blendedSeed.copy(alpha = 0.22f),
+            primarySeed.copy(alpha = 0.08f)
+        )
+    )
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable {
-                haptics.selectionTick()
-                onClick()
-            }
-            .holographicShimmer(enabled = pokemon.isLegendary || pokemon.isMythical),
-        shape = RoundedCornerShape(Dimens.Section),
+            .bouncyClickable(hapticUtils = haptics, onClick = onClick)
+            .holographicShimmer(
+                enabled = pokemon.isLegendary || pokemon.isMythical,
+                shape = RoundedCornerShape(20.dp)
+            ),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = if (isSelected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationLevel2)
+        border = BorderStroke(
+            width = if (isSelected) 2.5.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else primarySeed.copy(alpha = 0.25f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) Dimens.ElevationLevel2 else Dimens.ElevationLevel1)
     ) {
         Column(
             modifier = Modifier
@@ -361,14 +459,14 @@ fun PokemonCardItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(Dimens.Compact))
-                    .background(cardColor),
+                    .clip(RoundedCornerShape(Dimens.Default))
+                    .background(cardGradient),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = pokemon.formattedNumber,
                     style = StatNumberStyle.copy(fontSize = MaterialTheme.typography.labelSmall.fontSize),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(Dimens.Tight / 2)
@@ -377,8 +475,12 @@ fun PokemonCardItem(
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(pokemon.officialArtworkUrl ?: pokemon.spriteUrl)
+                        .crossfade(true)
+                        .size(256)
+                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
                         .build(),
-                    contentDescription = pokemon.name,
+                    contentDescription = "${pokemon.capitalizedName}, ${pokemon.formattedNumber}, ${pokemon.primaryType.capitalizedName} type",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxSize()
@@ -390,10 +492,12 @@ fun PokemonCardItem(
 
             Text(
                 text = pokemon.capitalizedName,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(Dimens.Micro))

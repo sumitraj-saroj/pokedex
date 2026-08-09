@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,11 +29,11 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     val searchQuery = savedStateHandle.getStateFlow("search_query", "")
-    private val selectedSortOption = MutableStateFlow(SortOption.NUMBER)
-    private val selectedSortOrder = MutableStateFlow(SortOrder.ASCENDING)
-    private val selectedGenerations = MutableStateFlow<Set<Int>>(emptySet())
-    private val selectedTypes = MutableStateFlow<Set<PokemonType>>(emptySet())
-    private val selectedSpecialCategories = MutableStateFlow<Set<SpecialCategory>>(emptySet())
+    val selectedSortOption = savedStateHandle.getStateFlow("sort_option", SortOption.NUMBER)
+    val selectedSortOrder = savedStateHandle.getStateFlow("sort_order", SortOrder.ASCENDING)
+    val selectedGenerations = savedStateHandle.getStateFlow("selected_generations", emptySet<Int>())
+    val selectedTypes = savedStateHandle.getStateFlow("selected_types", emptySet<PokemonType>())
+    val selectedSpecialCategories = savedStateHandle.getStateFlow("selected_categories", emptySet<SpecialCategory>())
 
     private data class FilterState(
         val query: String,
@@ -69,8 +70,60 @@ class HomeViewModel @Inject constructor(
         themePreferencesRepository.themeModeFlow,
         trainerPreferencesRepository.trainerDataFlow
     ) { allPokemon, syncState, filterState, themeMode, trainerData ->
+        val list = allPokemon.filter { pokemon ->
+            val matchesQuery = if (filterState.query.isBlank()) {
+                true
+            } else {
+                val q = filterState.query.trim().lowercase()
+                val matchesName = pokemon.name.lowercase().contains(q)
+                val matchesNumber = pokemon.number.toString().contains(q) || pokemon.formattedNumber.lowercase().contains(q)
+                matchesName || matchesNumber
+            }
+
+            val matchesGen = if (filterState.generations.isEmpty()) {
+                true
+            } else {
+                filterState.generations.contains(pokemon.effectiveGeneration)
+            }
+
+            val matchesType = if (filterState.types.isEmpty()) {
+                true
+            } else {
+                filterState.types.any { requiredType ->
+                    pokemon.primaryType == requiredType || pokemon.secondaryType == requiredType
+                }
+            }
+
+            val matchesSpecial = if (filterState.specialCategories.isEmpty()) {
+                true
+            } else {
+                filterState.specialCategories.any { category ->
+                    category.matches(pokemon)
+                }
+            }
+
+            matchesQuery && matchesGen && matchesType && matchesSpecial
+        }
+
+        val comparator = Comparator<com.dexter.app.domain.model.Pokemon> { a, b ->
+            when (filterState.sortOption) {
+                SortOption.NUMBER -> a.number.compareTo(b.number)
+                SortOption.NAME -> a.name.compareTo(b.name, ignoreCase = true)
+                SortOption.TOTAL_STATS -> (a.stats?.total ?: 0).compareTo(b.stats?.total ?: 0)
+                SortOption.HEIGHT -> a.heightM.compareTo(b.heightM)
+                SortOption.WEIGHT -> a.weightKg.compareTo(b.weightKg)
+            }
+        }
+
+        val filtered = if (filterState.sortOrder == SortOrder.DESCENDING) {
+            list.sortedWith(comparator.reversed())
+        } else {
+            list.sortedWith(comparator)
+        }
+
         HomeUiState(
             pokemonList = allPokemon,
+            filteredList = filtered,
             syncState = syncState,
             searchQuery = filterState.query,
             sortOption = filterState.sortOption,
@@ -81,7 +134,8 @@ class HomeViewModel @Inject constructor(
             themeMode = themeMode,
             avatarPokemonId = trainerData.avatarPokemonId
         )
-    }.stateIn(
+    }.flowOn(kotlinx.coroutines.Dispatchers.Default)
+    .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HomeUiState()
@@ -98,16 +152,16 @@ class HomeViewModel @Inject constructor(
     }
 
     fun setSortOption(option: SortOption) {
-        selectedSortOption.value = option
+        savedStateHandle["sort_option"] = option
     }
 
     fun setSortOrder(order: SortOrder) {
-        selectedSortOrder.value = order
+        savedStateHandle["sort_order"] = order
     }
 
     fun toggleGenerationFilter(generation: Int) {
         val current = selectedGenerations.value
-        selectedGenerations.value = if (current.contains(generation)) {
+        savedStateHandle["selected_generations"] = if (current.contains(generation)) {
             current - generation
         } else {
             current + generation
@@ -116,7 +170,7 @@ class HomeViewModel @Inject constructor(
 
     fun toggleTypeFilter(type: PokemonType) {
         val current = selectedTypes.value
-        selectedTypes.value = if (current.contains(type)) {
+        savedStateHandle["selected_types"] = if (current.contains(type)) {
             current - type
         } else {
             current + type
@@ -125,7 +179,7 @@ class HomeViewModel @Inject constructor(
 
     fun toggleSpecialCategory(category: SpecialCategory) {
         val current = selectedSpecialCategories.value
-        selectedSpecialCategories.value = if (current.contains(category)) {
+        savedStateHandle["selected_categories"] = if (current.contains(category)) {
             current - category
         } else {
             current + category
@@ -134,11 +188,11 @@ class HomeViewModel @Inject constructor(
 
     fun clearFilters() {
         savedStateHandle["search_query"] = ""
-        selectedSortOption.value = SortOption.NUMBER
-        selectedSortOrder.value = SortOrder.ASCENDING
-        selectedGenerations.value = emptySet()
-        selectedTypes.value = emptySet()
-        selectedSpecialCategories.value = emptySet()
+        savedStateHandle["sort_option"] = SortOption.NUMBER
+        savedStateHandle["sort_order"] = SortOrder.ASCENDING
+        savedStateHandle["selected_generations"] = emptySet<Int>()
+        savedStateHandle["selected_types"] = emptySet<PokemonType>()
+        savedStateHandle["selected_categories"] = emptySet<SpecialCategory>()
     }
 
     fun triggerResync() {
@@ -150,9 +204,9 @@ class HomeViewModel @Inject constructor(
     fun toggleThemeMode() {
         viewModelScope.launch {
             val nextMode = when (uiState.value.themeMode) {
-                AppThemeMode.SYSTEM -> AppThemeMode.LIGHT
                 AppThemeMode.LIGHT -> AppThemeMode.DARK
-                AppThemeMode.DARK -> AppThemeMode.SYSTEM
+                AppThemeMode.DARK -> AppThemeMode.LIGHT
+                AppThemeMode.SYSTEM -> AppThemeMode.LIGHT
             }
             themePreferencesRepository.setThemeMode(nextMode)
         }
