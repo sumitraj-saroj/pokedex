@@ -1,5 +1,7 @@
 package com.dexter.app.di
 
+import com.dexter.app.data.repository.AuthRepository
+import com.dexter.app.data.repository.AuthRepositoryImpl
 import com.dexter.app.data.repository.PokemonRepository
 import com.dexter.app.data.repository.PokemonRepositoryImpl
 import com.dexter.app.data.repository.TcgCardRepository
@@ -25,4 +27,10 @@ abstract class RepositoryModule {
     abstract fun bindTcgCardRepository(
         impl: TcgCardRepositoryImpl
     ): TcgCardRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        impl: AuthRepositoryImpl
+    ): AuthRepository
 }

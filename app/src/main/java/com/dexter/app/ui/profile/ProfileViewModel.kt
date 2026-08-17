@@ -6,6 +6,7 @@ import com.dexter.app.data.local.AchievementDao
 import com.dexter.app.data.local.QuizScoreDao
 import com.dexter.app.data.local.UserCollectionDao
 import com.dexter.app.data.repository.AppThemeMode
+import com.dexter.app.data.repository.AuthRepository
 import com.dexter.app.data.repository.ThemePreferencesRepository
 import com.dexter.app.data.repository.TrainerData
 import com.dexter.app.data.repository.TrainerPreferencesRepository
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val trainerPreferencesRepository: TrainerPreferencesRepository,
     private val themePreferencesRepository: ThemePreferencesRepository,
+    private val authRepository: AuthRepository,
     private val quizScoreDao: QuizScoreDao,
     private val userCollectionDao: UserCollectionDao,
     private val achievementDao: AchievementDao,
@@ -36,12 +38,15 @@ class ProfileViewModel @Inject constructor(
             trainerPreferencesRepository.updateDailyStreak()
 
             combine(
+                authRepository.authStateFlow,
                 trainerPreferencesRepository.trainerDataFlow,
                 themePreferencesRepository.themeModeFlow,
                 userCollectionDao.observeCaughtCount(),
-                quizScoreDao.observeAllQuizScores(),
-                achievementDao.observeUnlockedCount()
-            ) { trainer, themeMode, caught, scores, unlockedCount ->
+                combine(
+                    quizScoreDao.observeAllQuizScores(),
+                    achievementDao.observeUnlockedCount()
+                ) { scores, unlocked -> scores to unlocked }
+            ) { authState, trainer, themeMode, caught, (scores, unlockedCount) ->
                 val totalCorrect = scores.sumOf { it.correctCount }
                 val bestStreak = scores.map { it.bestStreak }.maxOrNull() ?: 0
                 val gamesPlayed = scores.size
@@ -50,16 +55,9 @@ class ProfileViewModel @Inject constructor(
                 val currentBaseXp = TrainerData.xpForLevel(currentLvl)
                 val nextLvlXp = TrainerData.xpForLevel(currentLvl + 1)
 
-                achievementEngine.auditAchievements(
-                    caughtCount = caught,
-                    totalCorrectQuiz = totalCorrect,
-                    bestQuizStreak = bestStreak,
-                    loginStreak = trainer.loginStreak,
-                    trainerLevel = trainer.level
-                )
-
                 ProfileUiState(
                     isLoading = false,
+                    authState = authState,
                     trainerData = trainer,
                     themeMode = themeMode,
                     currentLevelBaseXp = currentBaseXp,
@@ -72,7 +70,22 @@ class ProfileViewModel @Inject constructor(
                 )
             }.collect { newState ->
                 _uiState.value = newState
+
+                val trainer = newState.trainerData
+                achievementEngine.auditAchievements(
+                    caughtCount = newState.caughtCount,
+                    totalCorrectQuiz = newState.totalQuizCorrect,
+                    bestQuizStreak = newState.bestQuizStreak,
+                    loginStreak = trainer.loginStreak,
+                    trainerLevel = trainer.level
+                )
             }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.logout()
         }
     }
 

@@ -61,6 +61,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.ui.achievements.AchievementsScreen
 import com.dexter.app.ui.achievements.AchievementsViewModel
+import com.dexter.app.ui.auth.LoginScreen
+import com.dexter.app.ui.auth.LoginViewModel
+import com.dexter.app.ui.auth.RegisterScreen
+import com.dexter.app.ui.auth.RegisterViewModel
 import com.dexter.app.ui.compare.CompareScreen
 import com.dexter.app.ui.compare.CompareViewModel
 import com.dexter.app.ui.detail.DetailScreen
@@ -226,7 +230,51 @@ fun DexterNavHost(
                         onAchievementsClick = { navController.navigate(Screen.Achievements.route) },
                         onAvatarSelect = viewModel::selectAvatar,
                         onHapticToggle = viewModel::setHapticEnabled,
-                        onThemeSelect = viewModel::setThemeMode
+                        onThemeSelect = viewModel::setThemeMode,
+                        onLoginClick = { navController.navigate(Screen.Login.route) },
+                        onLogoutClick = viewModel::logout
+                    )
+                }
+
+                composable(route = Screen.Login.route) {
+                    val viewModel: LoginViewModel = hiltViewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    LoginScreen(
+                        uiState = uiState,
+                        onEmailChange = viewModel::onEmailChanged,
+                        onPasswordChange = viewModel::onPasswordChanged,
+                        onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                        onFillDemoAccount = viewModel::fillDemoAccount,
+                        onLoginClick = viewModel::login,
+                        onNavigateToRegister = { navController.navigate(Screen.Register.route) },
+                        onBackClick = { navController.popBackStack() },
+                        onLoginSuccess = { navController.popBackStack() }
+                    )
+                }
+
+                composable(route = Screen.Register.route) {
+                    val viewModel: RegisterViewModel = hiltViewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    RegisterScreen(
+                        uiState = uiState,
+                        onTrainerNameChange = viewModel::onTrainerNameChanged,
+                        onEmailChange = viewModel::onEmailChanged,
+                        onPasswordChange = viewModel::onPasswordChanged,
+                        onConfirmPasswordChange = viewModel::onConfirmPasswordChanged,
+                        onAvatarSelect = viewModel::onAvatarSelected,
+                        onTogglePasswordVisibility = viewModel::togglePasswordVisibility,
+                        onRegisterClick = viewModel::register,
+                        onNavigateToLogin = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Login.route) { inclusive = true }
+                            }
+                        },
+                        onBackClick = { navController.popBackStack() },
+                        onRegisterSuccess = {
+                            navController.popBackStack(Screen.Profile.route, inclusive = false)
+                        }
                     )
                 }
 

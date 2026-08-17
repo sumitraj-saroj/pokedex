@@ -11,6 +11,15 @@
 
 ---
 
+## 📸 Screenshots
+
+| **Pokédex Home & Discovery** | **Pokémon Details & 3D Card** | **Side-by-Side Compare Mode** |
+| :---: | :---: | :---: |
+| <img src="assets/pokedex_home.jpeg" width="270" alt="Pokédex Home Screen" /> | <img src="assets/pokemon_detail.jpeg" width="270" alt="Pokémon Detail Screen" /> | <img src="assets/compare_mode.jpeg" width="270" alt="Pokémon Compare Mode" /> |
+| *Featured Pokémon of the Day, quick category filters, and 120 FPS grid* | *3D flip card, official/shiny/animated form switcher, and height/weight* | *Dual Pokémon battle comparison and real-time stat overlay radar* |
+
+---
+
 ## ✨ Key Features & Highlights
 
 - ⚡ **High-Performance 120 FPS Grid Scrolling**
