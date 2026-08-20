@@ -9,10 +9,12 @@ import com.dexter.app.data.repository.TrainerPreferencesRepository
 import com.dexter.app.domain.model.PokemonType
 import com.dexter.app.domain.model.SpecialCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -35,6 +37,11 @@ class HomeViewModel @Inject constructor(
     val selectedTypes = savedStateHandle.getStateFlow("selected_types", emptySet<PokemonType>())
     val selectedSpecialCategories = savedStateHandle.getStateFlow("selected_categories", emptySet<SpecialCategory>())
 
+    @OptIn(FlowPreview::class)
+    private val debouncedSearchQuery = searchQuery.debounce { query ->
+        if (query.isEmpty()) 0L else 150L
+    }
+
     private data class FilterState(
         val query: String,
         val sortOption: SortOption,
@@ -45,7 +52,7 @@ class HomeViewModel @Inject constructor(
     )
 
     private val filterStateFlow = kotlinx.coroutines.flow.combine(
-        searchQuery,
+        debouncedSearchQuery,
         selectedSortOption,
         selectedSortOrder,
         selectedGenerations,
