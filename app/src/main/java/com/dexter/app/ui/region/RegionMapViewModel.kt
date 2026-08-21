@@ -101,6 +101,10 @@ class RegionMapViewModel @Inject constructor(
         }
     }
 
+    fun setMapStyle(style: com.dexter.app.domain.model.region.MapStyle) {
+        _uiState.update { it.copy(mapStyle = style) }
+    }
+
     fun toggleRegionalTheme() {
         val region = _uiState.value.selectedRegion ?: return
         val url = region.audioThemeUrl

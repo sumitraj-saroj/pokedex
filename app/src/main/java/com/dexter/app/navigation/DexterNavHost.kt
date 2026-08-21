@@ -308,6 +308,7 @@ fun DexterNavHost(
                         onPokemonClick = { pokemonId ->
                             navController.navigate(Screen.Detail.createRoute(pokemonId))
                         },
+                        onMapStyleSelect = viewModel::setMapStyle,
                         onToggleAudioTheme = viewModel::toggleRegionalTheme,
                         onPlayPokemonCry = viewModel::playPokemonCry,
                         onSearchQueryChange = viewModel::onSearchQueryChanged,

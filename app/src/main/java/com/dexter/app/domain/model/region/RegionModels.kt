@@ -3,6 +3,12 @@ package com.dexter.app.domain.model.region
 import androidx.compose.runtime.Immutable
 import com.dexter.app.domain.model.PokemonType
 
+enum class MapStyle(val displayName: String, val icon: String) {
+    PIXEL_RETRO("Pixel Game Map", "🕹️"),
+    ILLUSTRATED_ART("Illustrated Art", "🖼️"),
+    TACTICAL_RADAR("Tactical Radar", "🌐")
+}
+
 enum class LocationType(val displayName: String, val emoji: String) {
     TOWN("Town", "🏡"),
     CITY("City", "🏙️"),
@@ -77,5 +83,6 @@ data class Region(
     val musicTheme: String,
     val audioThemeTitle: String = "",
     val audioThemeUrl: String = "",
+    val mapArtworkUrl: String = "",
     val locations: List<RegionLocation>
 )

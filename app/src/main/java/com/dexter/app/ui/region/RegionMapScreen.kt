@@ -93,6 +93,7 @@ fun RegionMapScreen(
     onLocationSelect: (String) -> Unit,
     onFilterTypeSelect: (LocationType?) -> Unit,
     onPokemonClick: (Int) -> Unit,
+    onMapStyleSelect: (com.dexter.app.domain.model.region.MapStyle) -> Unit,
     onToggleAudioTheme: () -> Unit,
     onPlayPokemonCry: (Int, String) -> Unit,
     onSearchQueryChange: (String) -> Unit,
@@ -415,6 +416,36 @@ fun RegionMapScreen(
                                     label = { Text("🪨 Caves & Dungeons", maxLines = 1) }
                                 )
                             }
+
+                            // Visual Map Style Switcher (Pixel vs Tactical vs Art)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                com.dexter.app.domain.model.region.MapStyle.entries.forEach { style ->
+                                    val isSelected = uiState.mapStyle == style
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            haptics.selectionTick()
+                                            onMapStyleSelect(style)
+                                        },
+                                        label = {
+                                            Text(
+                                                text = "${style.icon} ${style.displayName}",
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                maxLines = 1
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -423,6 +454,7 @@ fun RegionMapScreen(
                         RegionMapVisualizer(
                             region = currentRegion,
                             selectedLocationId = uiState.selectedLocationId,
+                            mapStyle = uiState.mapStyle,
                             onLocationSelect = onLocationSelect
                         )
                     }
