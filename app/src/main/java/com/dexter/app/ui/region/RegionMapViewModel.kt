@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -16,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class RegionMapViewModel @Inject constructor(
     private val regionRepository: RegionRepository,
-    private val pokemonRepository: PokemonRepository
+    private val pokemonRepository: PokemonRepository,
+    private val regionAudioPlayer: RegionAudioPlayer
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -37,11 +39,28 @@ class RegionMapViewModel @Inject constructor(
                 _uiState.update { it.copy(allPokemonMap = map) }
             }
         }
+
+        viewModelScope.launch {
+            combine(
+                regionAudioPlayer.isPlaying,
+                regionAudioPlayer.currentTrackTitle
+            ) { isPlaying, trackTitle ->
+                isPlaying to trackTitle
+            }.collect { (isPlaying, trackTitle) ->
+                _uiState.update {
+                    it.copy(
+                        isPlayingAudio = isPlaying,
+                        currentPlayingTrack = trackTitle
+                    )
+                }
+            }
+        }
     }
 
     fun selectRegion(regionNumber: Int) {
         val region = regionRepository.getRegionByNumber(regionNumber) ?: return
         val firstLocation = region.locations.firstOrNull()
+        regionAudioPlayer.stop()
         _uiState.update { current ->
             current.copy(
                 selectedRegionNumber = regionNumber,
@@ -82,6 +101,23 @@ class RegionMapViewModel @Inject constructor(
         }
     }
 
+    fun toggleRegionalTheme() {
+        val region = _uiState.value.selectedRegion ?: return
+        val url = region.audioThemeUrl
+        val title = region.audioThemeTitle.ifBlank { "${region.name} Regional Theme" }
+        if (url.isNotBlank()) {
+            regionAudioPlayer.togglePlayPause(url, title)
+        }
+    }
+
+    fun playPokemonCry(pokemonId: Int, pokemonName: String) {
+        regionAudioPlayer.playPokemonCry(pokemonId, pokemonName)
+    }
+
+    fun stopAudio() {
+        regionAudioPlayer.stop()
+    }
+
     fun onSearchQueryChanged(query: String) {
         val results = if (query.isBlank()) {
             emptyList()
@@ -105,5 +141,10 @@ class RegionMapViewModel @Inject constructor(
 
     fun clearSearch() {
         _uiState.update { it.copy(searchQuery = "", searchResults = emptyList(), isSearchActive = false) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        regionAudioPlayer.release()
     }
 }

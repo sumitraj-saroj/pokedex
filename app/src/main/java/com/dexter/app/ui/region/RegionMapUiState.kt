@@ -17,7 +17,9 @@ data class RegionMapUiState(
     val searchQuery: String = "",
     val searchResults: List<Pair<Region, RegionLocation>> = emptyList(),
     val allPokemonMap: Map<Int, Pokemon> = emptyMap(),
-    val isSearchActive: Boolean = false
+    val isSearchActive: Boolean = false,
+    val isPlayingAudio: Boolean = false,
+    val currentPlayingTrack: String? = null
 ) {
     val displayedLocations: List<RegionLocation>
         get() {

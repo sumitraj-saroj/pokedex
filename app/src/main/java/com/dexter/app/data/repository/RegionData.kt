@@ -22,6 +22,8 @@ object RegionData {
         starterIds = listOf(1, 4, 7), // Bulbasaur, Charmander, Squirtle
         legendaryIds = listOf(144, 145, 146, 150, 151), // Articuno, Zapdos, Moltres, Mewtwo, Mew
         musicTheme = "Nostalgic 8-bit fanfares, acoustic guitar, and vibrant brass trumpets.",
+        audioThemeTitle = "Pallet Town & Kanto Route 1 Fanfare",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/25.ogg",
         locations = listOf(
             RegionLocation(
                 id = "pallet_town",
@@ -394,6 +396,8 @@ object RegionData {
         starterIds = listOf(152, 155, 158), // Chikorita, Cyndaquil, Totodile
         legendaryIds = listOf(243, 244, 245, 249, 250, 251), // Raikou, Entei, Suicune, Lugia, Ho-Oh, Celebi
         musicTheme = "Traditional shamisen, shakuhachi flutes, and soothing acoustic strings.",
+        audioThemeTitle = "New Bark Town & Bell Tower Melodies",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/250.ogg",
         locations = listOf(
             RegionLocation(
                 id = "new_bark_town",
@@ -648,6 +652,8 @@ object RegionData {
         starterIds = listOf(252, 255, 258), // Treecko, Torchic, Mudkip
         legendaryIds = listOf(377, 378, 379, 380, 381, 382, 383, 384, 385, 386),
         musicTheme = "Vibrant trumpets, French horns, acoustic guitar, and dynamic tropical percussion.",
+        audioThemeTitle = "Littleroot Town & Hoenn Route 101 Horns",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/384.ogg",
         locations = listOf(
             RegionLocation(
                 id = "littleroot_town",
@@ -762,6 +768,8 @@ object RegionData {
         starterIds = listOf(387, 390, 393), // Turtwig, Chimchar, Piplup
         legendaryIds = listOf(480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493),
         musicTheme = "Melodic piano solos, dynamic brass, jazz fusion basslines, and dramatic strings.",
+        audioThemeTitle = "Twinleaf Town & Mt. Coronet Piano",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/483.ogg",
         locations = listOf(
             RegionLocation(
                 id = "twinleaf_town",
@@ -837,6 +845,8 @@ object RegionData {
         starterIds = listOf(495, 498, 501), // Snivy, Tepig, Oshawott
         legendaryIds = listOf(638, 639, 640, 641, 642, 643, 644, 645, 646),
         musicTheme = "Dynamic dynamic fusion, electric guitars, smooth jazz saxophones, and season-shifting orchestration.",
+        audioThemeTitle = "Castelia City & Skyarrow Bridge Jazz",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/643.ogg",
         locations = listOf(
             RegionLocation(
                 id = "castelia_city",
@@ -899,6 +909,8 @@ object RegionData {
         starterIds = listOf(650, 653, 656), // Chespin, Fennekin, Froakie
         legendaryIds = listOf(716, 717, 718, 719, 720, 721), // Xerneas, Yveltal, Zygarde...
         musicTheme = "Romantic accordion melodies, lush classical string quartets, and French brass fanfares.",
+        audioThemeTitle = "Lumiose City & Prism Tower Accordion",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/716.ogg",
         locations = listOf(
             RegionLocation(
                 id = "lumiose_city",
@@ -961,6 +973,8 @@ object RegionData {
         starterIds = listOf(722, 725, 728), // Rowlet, Litten, Popplio
         legendaryIds = listOf(785, 786, 787, 788, 791, 792, 793, 794, 800),
         musicTheme = "Hawaiian slack-key guitar, ukulele, tropical log drums, and bright choir chants.",
+        audioThemeTitle = "Hau'oli City & Melemele Island Ukulele",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/785.ogg",
         locations = listOf(
             RegionLocation(
                 id = "melemele_island",
@@ -1022,6 +1036,8 @@ object RegionData {
         starterIds = listOf(810, 813, 816), // Grookey, Scorbunny, Sobble
         legendaryIds = listOf(888, 889, 890, 891, 892, 898),
         musicTheme = "British brass bands, crowd stadium chants, electronic rock, and bagpipe harmonies.",
+        audioThemeTitle = "Postwick & Wild Area Adventure",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/888.ogg",
         locations = listOf(
             RegionLocation(
                 id = "wild_area",
@@ -1076,6 +1092,8 @@ object RegionData {
         starterIds = listOf(906, 909, 912), // Sprigatito, Fuecoco, Quaxly
         legendaryIds = listOf(1001, 1002, 1003, 1004, 1007, 1008, 1017, 1024, 1025),
         musicTheme = "Spanish flamenco guitars, castanets, electronic dance beats, and grand academic orchestral themes.",
+        audioThemeTitle = "Mesagoza & Area Zero EDM Symphony",
+        audioThemeUrl = "https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/1007.ogg",
         locations = listOf(
             RegionLocation(
                 id = "mesagoza",

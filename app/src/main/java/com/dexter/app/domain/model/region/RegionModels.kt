@@ -58,7 +58,8 @@ data class RegionLocation(
     val gymLeader: GymLeader? = null,
     val legendary: LegendaryEncounter? = null,
     val wildSpawns: List<WildSpawn> = emptyList(),
-    val musicThemeDescription: String = ""
+    val musicThemeDescription: String = "",
+    val audioUrl: String = ""
 )
 
 @Immutable
@@ -74,5 +75,7 @@ data class Region(
     val starterIds: List<Int>,
     val legendaryIds: List<Int>,
     val musicTheme: String,
+    val audioThemeTitle: String = "",
+    val audioThemeUrl: String = "",
     val locations: List<RegionLocation>
 )

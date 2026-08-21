@@ -1,11 +1,14 @@
 package com.dexter.app.ui.region
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -13,7 +16,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,18 +32,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -61,14 +66,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.domain.model.region.LocationType
@@ -89,6 +93,8 @@ fun RegionMapScreen(
     onLocationSelect: (String) -> Unit,
     onFilterTypeSelect: (LocationType?) -> Unit,
     onPokemonClick: (Int) -> Unit,
+    onToggleAudioTheme: () -> Unit,
+    onPlayPokemonCry: (Int, String) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSelectSearchResult: (Int, String) -> Unit,
     onClearSearch: () -> Unit,
@@ -133,9 +139,11 @@ fun RegionMapScreen(
                                 maxLines = 1
                             )
                             Text(
-                                text = currentRegion.japaneseName,
+                                text = "Gen ${currentRegion.number} • ${currentRegion.japaneseName}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -252,7 +260,9 @@ fun RegionMapScreen(
                                                 Text(
                                                     text = location.name,
                                                     style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.Bold
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                             }
                                             Text(
@@ -281,7 +291,7 @@ fun RegionMapScreen(
                     return@Column
                 }
 
-                // Horizontal Region Selector Tabs
+                // Horizontal Generation & Region Selector
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -309,7 +319,8 @@ fun RegionMapScreen(
                                 Text(
                                     text = "Gen ${reg.number} • ${reg.name}",
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
@@ -333,6 +344,8 @@ fun RegionMapScreen(
                         RegionHeroCard(
                             region = currentRegion,
                             pokemonMap = uiState.allPokemonMap,
+                            isPlayingAudio = uiState.isPlayingAudio,
+                            onToggleAudio = onToggleAudioTheme,
                             onPokemonClick = onPokemonClick
                         )
                     }
@@ -372,7 +385,7 @@ fun RegionMapScreen(
                                         haptics.selectionTick()
                                         onFilterTypeSelect(null)
                                     },
-                                    label = { Text("All (${currentRegion.locations.size})") }
+                                    label = { Text("All (${currentRegion.locations.size})", maxLines = 1) }
                                 )
 
                                 FilterChip(
@@ -381,7 +394,7 @@ fun RegionMapScreen(
                                         haptics.selectionTick()
                                         onFilterTypeSelect(if (uiState.filterType == LocationType.CITY) null else LocationType.CITY)
                                     },
-                                    label = { Text("🏙️ Cities & Towns") }
+                                    label = { Text("🏙️ Cities & Towns", maxLines = 1) }
                                 )
 
                                 FilterChip(
@@ -390,16 +403,16 @@ fun RegionMapScreen(
                                         haptics.selectionTick()
                                         onFilterTypeSelect(if (uiState.filterType == LocationType.LEGENDARY_LAIR) null else LocationType.LEGENDARY_LAIR)
                                     },
-                                    label = { Text("⭐ Legendary Lairs") }
+                                    label = { Text("⭐ Legendaries", maxLines = 1) }
                                 )
 
                                 FilterChip(
-                                    selected = uiState.filterType == LocationType.CAVE || uiState.filterType == LocationType.MOUNTAIN,
+                                    selected = uiState.filterType == LocationType.CAVE || uiState.filterType == LocationType.MOUNTAIN || uiState.filterType == LocationType.DUNGEON,
                                     onClick = {
                                         haptics.selectionTick()
                                         onFilterTypeSelect(if (uiState.filterType == LocationType.CAVE) null else LocationType.CAVE)
                                     },
-                                    label = { Text("🪨 Caves & Dungeons") }
+                                    label = { Text("🪨 Caves & Dungeons", maxLines = 1) }
                                 )
                             }
                         }
@@ -420,7 +433,8 @@ fun RegionMapScreen(
                             LocationDetailInspectorCard(
                                 location = selectedLoc,
                                 pokemonMap = uiState.allPokemonMap,
-                                onPokemonClick = onPokemonClick
+                                onPokemonClick = onPokemonClick,
+                                onPlayCry = onPlayPokemonCry
                             )
                         }
                     }
@@ -430,11 +444,12 @@ fun RegionMapScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RegionHeroCard(
     region: Region,
     pokemonMap: Map<Int, com.dexter.app.domain.model.Pokemon>,
+    isPlayingAudio: Boolean,
+    onToggleAudio: () -> Unit,
     onPokemonClick: (Int) -> Unit
 ) {
     var isLoreExpanded by remember { mutableStateOf(false) }
@@ -453,32 +468,15 @@ private fun RegionHeroCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header Row: Tagline & Villain Team Badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = region.tagline.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
-                ) {
-                    Text(
-                        text = region.villainTeam,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-            }
+            // Header Row: Tagline
+            Text(
+                text = region.tagline.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
             // Description / Lore
             Text(
@@ -489,40 +487,93 @@ private fun RegionHeroCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Professor and Music details
+            // Structured Metadata Grid: Professor & Villain Team
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                // Professor Pill
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = region.professor,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "RESEARCHER",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = region.professor,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
 
+                // Villain Team Pill
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(text = "🏴‍☠️", style = MaterialTheme.typography.bodySmall)
+                        Column {
+                            Text(
+                                text = "VILLAIN ORG",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = region.villainTeam,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Read Lore Expander Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
                 TextButton(onClick = { isLoreExpanded = !isLoreExpanded }) {
                     Text(
-                        text = if (isLoreExpanded) "Show Less" else "Read Lore",
+                        text = if (isLoreExpanded) "Show Less" else "Read Full Lore",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            // Starter Pokémon Row
+            // Starter Pokémon Trio (Equal-Width Cards)
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     text = "REGIONAL STARTERS",
@@ -532,7 +583,7 @@ private fun RegionHeroCard(
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     region.starterIds.forEach { starterId ->
                         val pokemon = pokemonMap[starterId]
@@ -543,10 +594,12 @@ private fun RegionHeroCard(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh
                         ) {
-                            Row(
-                                modifier = Modifier.padding(6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 val artwork = pokemon?.officialArtworkUrl ?: pokemon?.spriteUrl
                                 AsyncImage(
@@ -555,7 +608,7 @@ private fun RegionHeroCard(
                                         .crossfade(true)
                                         .build(),
                                     contentDescription = pokemon?.name,
-                                    modifier = Modifier.size(32.dp),
+                                    modifier = Modifier.size(36.dp),
                                     contentScale = ContentScale.Fit
                                 )
                                 Text(
@@ -571,28 +624,61 @@ private fun RegionHeroCard(
                 }
             }
 
-            // Soundtrack / Audio Atmosphere Vibe
+            // Interactive Regional Music Soundscape Player
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.MusicNote,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = region.musicTheme,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            IconButton(onClick = onToggleAudio) {
+                                Icon(
+                                    imageVector = if (isPlayingAudio) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (isPlayingAudio) "Pause Music" else "Play Music",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = region.audioThemeTitle.ifBlank { "${region.name} Regional Theme" },
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = region.musicTheme,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    if (isPlayingAudio) {
+                        AnimatedSoundVisualizer()
+                    }
                 }
             }
         }
@@ -600,10 +686,57 @@ private fun RegionHeroCard(
 }
 
 @Composable
+private fun AnimatedSoundVisualizer() {
+    val infiniteTransition = rememberInfiniteTransition(label = "equalizer")
+
+    val h1 by infiniteTransition.animateFloat(
+        initialValue = 4f,
+        targetValue = 18f,
+        animationSpec = infiniteRepeatable(tween(400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "h1"
+    )
+    val h2 by infiniteTransition.animateFloat(
+        initialValue = 16f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(tween(350, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "h2"
+    )
+    val h3 by infiniteTransition.animateFloat(
+        initialValue = 8f,
+        targetValue = 20f,
+        animationSpec = infiniteRepeatable(tween(450, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "h3"
+    )
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.height(24.dp).padding(horizontal = 4.dp)
+    ) {
+        Surface(
+            modifier = Modifier.width(3.dp).height(h1.dp),
+            shape = RoundedCornerShape(2.dp),
+            color = MaterialTheme.colorScheme.primary
+        ) {}
+        Surface(
+            modifier = Modifier.width(3.dp).height(h2.dp),
+            shape = RoundedCornerShape(2.dp),
+            color = MaterialTheme.colorScheme.primary
+        ) {}
+        Surface(
+            modifier = Modifier.width(3.dp).height(h3.dp),
+            shape = RoundedCornerShape(2.dp),
+            color = MaterialTheme.colorScheme.primary
+        ) {}
+    }
+}
+
+@Composable
 private fun LocationDetailInspectorCard(
     location: RegionLocation,
     pokemonMap: Map<Int, com.dexter.app.domain.model.Pokemon>,
-    onPokemonClick: (Int) -> Unit
+    onPokemonClick: (Int) -> Unit,
+    onPlayCry: (Int, String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -622,30 +755,27 @@ private fun LocationDetailInspectorCard(
             // Location Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Text(
+                    text = location.type.emoji,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = location.type.emoji,
-                        style = MaterialTheme.typography.headlineSmall
+                        text = location.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Column {
-                        Text(
-                            text = location.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = location.type.displayName,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    Text(
+                        text = location.type.displayName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
@@ -670,7 +800,8 @@ private fun LocationDetailInspectorCard(
                 LegendaryEncounterCard(
                     legendary = leg,
                     pokemonMap = pokemonMap,
-                    onPokemonClick = onPokemonClick
+                    onPokemonClick = onPokemonClick,
+                    onPlayCry = onPlayCry
                 )
             }
 
@@ -679,7 +810,8 @@ private fun LocationDetailInspectorCard(
                 WildSpawnsSection(
                     spawns = location.wildSpawns,
                     pokemonMap = pokemonMap,
-                    onPokemonClick = onPokemonClick
+                    onPokemonClick = onPokemonClick,
+                    onPlayCry = onPlayCry
                 )
             }
 
@@ -691,7 +823,7 @@ private fun LocationDetailInspectorCard(
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.LibraryMusic,
+                        imageVector = Icons.Default.MusicNote,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
@@ -699,7 +831,9 @@ private fun LocationDetailInspectorCard(
                     Text(
                         text = location.musicThemeDescription,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -720,68 +854,103 @@ private fun GymLeaderCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Row 1: Leader Name & Specialty Type Chip
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(40.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = leader.badgeEmoji, style = MaterialTheme.typography.titleMedium)
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(text = leader.badgeEmoji, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    Column {
+                        Text(
+                            text = leader.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = leader.title,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
-                Column {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                ) {
                     Text(
-                        text = "${leader.name} • ${leader.title}",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "${leader.badgeName} (${leader.specialtyType.typeName.uppercase()} Gym)",
+                        text = "${leader.specialtyType.typeName.uppercase()} GYM",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
 
-            // Ace Pokémon pill
-            val ace = pokemonMap[leader.acePokemonId]
-            Surface(
-                modifier = Modifier.clickable { onPokemonClick(leader.acePokemonId) },
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            // Row 2: Badge Name on Left, Ace Pokémon on Right
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                Text(
+                    text = "${leader.badgeName} (${leader.badgeEmoji})",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+
+                val ace = pokemonMap[leader.acePokemonId]
+                Surface(
+                    modifier = Modifier.clickable { onPokemonClick(leader.acePokemonId) },
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest
                 ) {
-                    val artwork = ace?.officialArtworkUrl ?: ace?.spriteUrl
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(artwork)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = leader.acePokemonName,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = leader.acePokemonName,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val artwork = ace?.officialArtworkUrl ?: ace?.spriteUrl
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(artwork)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = leader.acePokemonName,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Ace: ${leader.acePokemonName}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
@@ -792,7 +961,8 @@ private fun GymLeaderCard(
 private fun LegendaryEncounterCard(
     legendary: com.dexter.app.domain.model.region.LegendaryEncounter,
     pokemonMap: Map<Int, com.dexter.app.domain.model.Pokemon>,
-    onPokemonClick: (Int) -> Unit
+    onPokemonClick: (Int) -> Unit,
+    onPlayCry: (Int, String) -> Unit
 ) {
     val pokemon = pokemonMap[legendary.pokemonId]
 
@@ -834,34 +1004,56 @@ private fun LegendaryEncounterCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color(0xFFFFD54F),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "LEGENDARY: ${legendary.pokemonName.uppercase()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFFFD54F)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD54F),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "LEGENDARY",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFFFFD54F)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onPlayCry(legendary.pokemonId, legendary.pokemonName) },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = "Play Cry",
+                            tint = Color(0xFFFFD54F),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
 
                 Text(
-                    text = "Lv. ${legendary.level} • ${legendary.encounterType}",
-                    style = MaterialTheme.typography.titleSmall,
+                    text = "${legendary.pokemonName} (Lv. ${legendary.level})",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
                     text = legendary.requirementText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.85f)
+                    color = Color.White.copy(alpha = 0.85f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -872,7 +1064,8 @@ private fun LegendaryEncounterCard(
 private fun WildSpawnsSection(
     spawns: List<WildSpawn>,
     pokemonMap: Map<Int, com.dexter.app.domain.model.Pokemon>,
-    onPokemonClick: (Int) -> Unit
+    onPokemonClick: (Int) -> Unit,
+    onPlayCry: (Int, String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -901,6 +1094,7 @@ private fun WildSpawnsSection(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(
+                            modifier = Modifier.weight(1f),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
@@ -915,41 +1109,62 @@ private fun WildSpawnsSection(
                                 contentScale = ContentScale.Fit
                             )
 
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = spawn.pokemonName,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "Lv. ${spawn.minLevel}–${spawn.maxLevel} • ${spawn.method}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
 
-                        // Rarity Chip
-                        val rarityColor = when (spawn.rarity.lowercase()) {
-                            "very common" -> Color(0xFF81C784)
-                            "common" -> Color(0xFF64B5F6)
-                            "uncommon" -> Color(0xFFFFB74D)
-                            "rare" -> Color(0xFFBA68C8)
-                            "very rare" -> Color(0xFFE57373)
-                            else -> MaterialTheme.colorScheme.primary
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = rarityColor.copy(alpha = 0.2f)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = spawn.rarity,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = rarityColor,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                            )
+                            // Rarity Chip
+                            val rarityColor = when (spawn.rarity.lowercase()) {
+                                "very common" -> Color(0xFF81C784)
+                                "common" -> Color(0xFF64B5F6)
+                                "uncommon" -> Color(0xFFFFB74D)
+                                "rare" -> Color(0xFFBA68C8)
+                                "very rare" -> Color(0xFFE57373)
+                                else -> MaterialTheme.colorScheme.primary
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = rarityColor.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = spawn.rarity,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = rarityColor,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { onPlayCry(spawn.pokemonId, spawn.pokemonName) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                    contentDescription = "Cry",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
                 }
