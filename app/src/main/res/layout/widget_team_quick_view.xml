@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_team_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_surface_bg"
+    android:padding="12dp">
+
+    <!-- Top Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="8dp">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_widget_groups"
+            android:contentDescription="Team" />
+
+        <TextView
+            android:id="@+id/widget_team_header_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:text="BATTLE TEAM"
+            android:textColor="#A5D6A7"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.05" />
+
+        <TextView
+            android:id="@+id/widget_team_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/widget_chip_bg"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:text="0/6"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- 6 Team Slots Grid Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Slot 1 -->
+        <FrameLayout
+            android:id="@+id/widget_team_slot_1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="3dp"
+            android:background="@drawable/widget_slot_empty_bg"
+            android:padding="3dp">
+
+            <ImageView
+                android:id="@+id/widget_team_img_1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_widget_add"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+        <!-- Slot 2 -->
+        <FrameLayout
+            android:id="@+id/widget_team_slot_2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/widget_slot_empty_bg"
+            android:padding="3dp">
+
+            <ImageView
+                android:id="@+id/widget_team_img_2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_widget_add"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+        <!-- Slot 3 -->
+        <FrameLayout
+            android:id="@+id/widget_team_slot_3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/widget_slot_empty_bg"
+            android:padding="3dp">
+
+            <ImageView
+                android:id="@+id/widget_team_img_3"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_widget_add"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+        <!-- Slot 4 -->
+        <FrameLayout
+            android:id="@+id/widget_team_slot_4"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/widget_slot_empty_bg"
+            android:padding="3dp">
+
+            <ImageView
+                android:id="@+id/widget_team_img_4"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_widget_add"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+        <!-- Slot 5 -->
+        <FrameLayout
+            android:id="@+id/widget_team_slot_5"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:background="@drawable/widget_slot_empty_bg"
+            android:padding="3dp">
+
+            <ImageView
+                android:id="@+id/widget_team_img_5"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_widget_add"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+        <!-- Slot 6 -->
+        <FrameLayout
+            android:id="@+id/widget_team_slot_6"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="3dp"
+            android:background="@drawable/widget_slot_empty_bg"
+            android:padding="3dp">
+
+            <ImageView
+                android:id="@+id/widget_team_img_6"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_widget_add"
+                android:scaleType="fitCenter" />
+        </FrameLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

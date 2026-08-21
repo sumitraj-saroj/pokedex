@@ -75,6 +75,8 @@ import com.dexter.app.ui.profile.ProfileScreen
 import com.dexter.app.ui.profile.ProfileViewModel
 import com.dexter.app.ui.quiz.QuizScreen
 import com.dexter.app.ui.quiz.QuizViewModel
+import com.dexter.app.ui.region.RegionMapScreen
+import com.dexter.app.ui.region.RegionMapViewModel
 import com.dexter.app.ui.team.TeamBuilderScreen
 import com.dexter.app.ui.team.TeamViewModel
 
@@ -168,6 +170,7 @@ fun DexterNavHost(
                         onResyncClick = viewModel::triggerResync,
                         onThemeToggleClick = viewModel::toggleThemeMode,
                         onProfileClick = { navController.navigate(Screen.Profile.route) },
+                        onRegionMapClick = { navController.navigate(Screen.RegionMap.route) },
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this@composable
                     )
@@ -289,6 +292,25 @@ fun DexterNavHost(
                         uiState = uiState,
                         onBackClick = { navController.popBackStack() },
                         onCategorySelect = viewModel::selectCategory
+                    )
+                }
+
+                composable(route = Screen.RegionMap.route) {
+                    val viewModel: RegionMapViewModel = hiltViewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    RegionMapScreen(
+                        uiState = uiState,
+                        onBackClick = { navController.popBackStack() },
+                        onRegionSelect = viewModel::selectRegion,
+                        onLocationSelect = viewModel::selectLocation,
+                        onFilterTypeSelect = viewModel::setFilterType,
+                        onPokemonClick = { pokemonId ->
+                            navController.navigate(Screen.Detail.createRoute(pokemonId))
+                        },
+                        onSearchQueryChange = viewModel::onSearchQueryChanged,
+                        onSelectSearchResult = viewModel::selectSearchResult,
+                        onClearSearch = viewModel::clearSearch
                     )
                 }
 

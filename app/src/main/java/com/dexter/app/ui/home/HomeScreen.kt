@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CatchingPokemon
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SettingsBrightness
@@ -103,6 +104,7 @@ fun HomeScreen(
     onResyncClick: () -> Unit,
     onThemeToggleClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onRegionMapClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     windowWidthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     sharedTransitionScope: SharedTransitionScope? = null,
@@ -169,6 +171,7 @@ fun HomeScreen(
                     onResyncClick = onResyncClick,
                     onThemeToggleClick = onThemeToggleClick,
                     onProfileClick = onProfileClick,
+                    onRegionMapClick = onRegionMapClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope
                 )
@@ -214,6 +217,7 @@ fun HomeScreen(
             onResyncClick = onResyncClick,
             onThemeToggleClick = onThemeToggleClick,
             onProfileClick = onProfileClick,
+            onRegionMapClick = onRegionMapClick,
             modifier = modifier,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope
@@ -238,6 +242,7 @@ private fun HomeScreenListPane(
     onResyncClick: () -> Unit,
     onThemeToggleClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onRegionMapClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
@@ -266,6 +271,17 @@ private fun HomeScreenListPane(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = onRegionMapClick,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Explore,
+                            contentDescription = "Regional Lore Map",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                     IconButton(
                         onClick = onResyncClick,
                         modifier = Modifier.size(36.dp)

@@ -18,12 +18,15 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 import androidx.lifecycle.SavedStateHandle
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle,
     private val pokemonRepository: PokemonRepository,
     private val themePreferencesRepository: ThemePreferencesRepository,
@@ -151,6 +154,7 @@ class HomeViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             pokemonRepository.syncPokemonData(forceResync = false)
+            com.dexter.app.widget.DexterWidgetManager.updateAllWidgets(context)
         }
     }
 

@@ -325,6 +325,8 @@ class QuizViewModel @Inject constructor(
                 loginStreak = trainer?.loginStreak ?: 1,
                 trainerLevel = trainer?.level ?: 1
             )
+
+            com.dexter.app.widget.DexterWidgetManager.updateQuizStreakWidget(context)
         }
     }
 

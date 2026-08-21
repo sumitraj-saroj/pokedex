@@ -5,6 +5,7 @@ sealed class Screen(val route: String) {
     data object TeamBuilder : Screen("team")
     data object Compare : Screen("compare")
     data object Quiz : Screen("quiz")
+    data object RegionMap : Screen("region_map")
     data object Profile : Screen("profile")
     data object Achievements : Screen("achievements")
     data object Login : Screen("login")

@@ -1,10 +1,13 @@
 package com.dexter.app.ui.team
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dexter.app.data.repository.PokemonRepository
 import com.dexter.app.domain.model.Pokemon
+import com.dexter.app.widget.DexterWidgetManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TeamViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: PokemonRepository
 ) : ViewModel() {
 
@@ -36,6 +40,7 @@ class TeamViewModel @Inject constructor(
                         isLoading = false
                     )
                 }
+                DexterWidgetManager.updateTeamQuickViewWidget(context)
             }
         }
     }
@@ -52,18 +57,21 @@ class TeamViewModel @Inject constructor(
         viewModelScope.launch {
             repository.setTeamMember(slot, pokemon.id)
             closePicker()
+            DexterWidgetManager.updateTeamQuickViewWidget(context)
         }
     }
 
     fun removeSlot(slot: Int) {
         viewModelScope.launch {
             repository.removeTeamMember(slot)
+            DexterWidgetManager.updateTeamQuickViewWidget(context)
         }
     }
 
     fun clearTeam() {
         viewModelScope.launch {
             repository.clearTeam()
+            DexterWidgetManager.updateTeamQuickViewWidget(context)
         }
     }
 
@@ -71,6 +79,7 @@ class TeamViewModel @Inject constructor(
         if (fromSlot == toSlot) return
         viewModelScope.launch {
             repository.swapTeamSlots(fromSlot, toSlot)
+            DexterWidgetManager.updateTeamQuickViewWidget(context)
         }
     }
 }

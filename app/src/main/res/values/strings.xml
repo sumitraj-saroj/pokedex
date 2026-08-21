@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dexter</string>
+    <string name="widget_pokemon_daily_name">Pokémon of the Day</string>
+    <string name="widget_pokemon_daily_description">Shows a daily Pokémon with artwork, types, and Pokédex trivia.</string>
+    <string name="widget_quiz_streak_name">Quiz Streak &amp; Quick Play</string>
+    <string name="widget_quiz_streak_description">Shows your current quiz streak, lives, and quick-launch to the Quiz.</string>
+    <string name="widget_team_quick_name">Battle Team Quick View</string>
+    <string name="widget_team_quick_description">Displays your current 6-Pokémon team directly on your home screen.</string>
+</resources>

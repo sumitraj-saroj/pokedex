@@ -10,18 +10,61 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="Dexter"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:theme="@android:style/Theme.Material.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Widget 1: Pokémon of the Day Widget -->
+        <receiver
+            android:name=".widget.PokemonDailyWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_pokemon_daily_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.dexter.app.widget.ACTION_REFRESH_DAILY_POKEMON" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pokemon_daily_widget_info" />
+        </receiver>
+
+        <!-- Widget 2: Quiz Streak Widget -->
+        <receiver
+            android:name=".widget.QuizStreakWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_quiz_streak_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quiz_streak_widget_info" />
+        </receiver>
+
+        <!-- Widget 3: Team Quick View Widget -->
+        <receiver
+            android:name=".widget.TeamQuickViewWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_team_quick_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/team_quick_view_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>
