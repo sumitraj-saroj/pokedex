@@ -31,8 +31,8 @@ object RegionData {
                 type = LocationType.TOWN,
                 description = "A quiet, tranquil hometown where budding Trainers receive their first partner Pokémon from Professor Oak.",
                 normalizedX = 0.22f,
-                normalizedY = 0.82f,
-                connectedToIds = listOf("route_1", "route_21"),
+                normalizedY = 0.74f,
+                connectedToIds = listOf("route_1", "cinnabar_island"),
                 wildSpawns = listOf(
                     WildSpawn(16, "Pidgey", 2, 5, "Tall Grass", "Common"),
                     WildSpawn(19, "Rattata", 2, 4, "Tall Grass", "Common"),
@@ -47,7 +47,7 @@ object RegionData {
                 type = LocationType.ROUTE,
                 description = "A grassy path with small ledges connecting Pallet Town and Viridian City.",
                 normalizedX = 0.22f,
-                normalizedY = 0.70f,
+                normalizedY = 0.66f,
                 connectedToIds = listOf("pallet_town", "viridian_city"),
                 wildSpawns = listOf(
                     WildSpawn(16, "Pidgey", 2, 5, "Tall Grass", "Very Common"),
@@ -62,7 +62,7 @@ object RegionData {
                 description = "The gateway to the Indigo Plateau. Houses the mysterious 8th Gym led by Giovanni.",
                 normalizedX = 0.22f,
                 normalizedY = 0.58f,
-                connectedToIds = listOf("route_1", "viridian_forest", "route_22"),
+                connectedToIds = listOf("route_1", "viridian_forest", "indigo_plateau"),
                 gymLeader = GymLeader(
                     name = "Giovanni",
                     title = "The Grounded Boss",
@@ -84,7 +84,7 @@ object RegionData {
                 type = LocationType.FOREST,
                 description = "A deep, verdant labyrinth of trees buzzing with Bug-type Pokémon and wild Pikachu.",
                 normalizedX = 0.22f,
-                normalizedY = 0.44f,
+                normalizedY = 0.46f,
                 connectedToIds = listOf("viridian_city", "pewter_city"),
                 wildSpawns = listOf(
                     WildSpawn(10, "Caterpie", 3, 6, "Tall Grass", "Very Common"),
@@ -101,7 +101,7 @@ object RegionData {
                 type = LocationType.CITY,
                 description = "A stony town resting at the base of Mt. Moon. Home to the Pewter Museum of Science and Brock's Rock Gym.",
                 normalizedX = 0.22f,
-                normalizedY = 0.30f,
+                normalizedY = 0.35f,
                 connectedToIds = listOf("viridian_forest", "mt_moon"),
                 gymLeader = GymLeader(
                     name = "Brock",
@@ -119,7 +119,7 @@ object RegionData {
                 name = "Mt. Moon",
                 type = LocationType.CAVE,
                 description = "A mystical cavern renowned for frequent meteor falls and Clefairy Moon Dance rituals.",
-                normalizedX = 0.40f,
+                normalizedX = 0.44f,
                 normalizedY = 0.30f,
                 connectedToIds = listOf("pewter_city", "cerulean_city"),
                 wildSpawns = listOf(
@@ -135,9 +135,9 @@ object RegionData {
                 name = "Cerulean City",
                 type = LocationType.CITY,
                 description = "A floral city enclosed by waterways. Home to Misty's Water Gym and the entrance to Cerulean Cave.",
-                normalizedX = 0.58f,
+                normalizedX = 0.65f,
                 normalizedY = 0.30f,
-                connectedToIds = listOf("mt_moon", "cerulean_cave", "saffron_city", "vermilion_city"),
+                connectedToIds = listOf("mt_moon", "cerulean_cave", "saffron_city", "power_plant"),
                 gymLeader = GymLeader(
                     name = "Misty",
                     title = "The Tomboyish Mermaid",
@@ -154,8 +154,8 @@ object RegionData {
                 name = "Cerulean Cave",
                 type = LocationType.LEGENDARY_LAIR,
                 description = "A forbidden cavern filled with extremely ferocious Pokémon. At its deepest floor rests the ultimate genetic Pokémon.",
-                normalizedX = 0.54f,
-                normalizedY = 0.22f,
+                normalizedX = 0.58f,
+                normalizedY = 0.20f,
                 connectedToIds = listOf("cerulean_city"),
                 legendary = LegendaryEncounter(
                     pokemonId = 150,
@@ -174,98 +174,12 @@ object RegionData {
                 musicThemeDescription = "Tense, pulsing techno baseline with dread-inducing string climaxes."
             ),
             RegionLocation(
-                id = "vermilion_city",
-                name = "Vermilion City",
-                type = LocationType.CITY,
-                description = "A sunny southern seaport where the luxury liner S.S. Anne docks. Lt. Surge commands the Electric Gym.",
-                normalizedX = 0.58f,
-                normalizedY = 0.58f,
-                connectedToIds = listOf("cerulean_city", "saffron_city", "lavender_town", "power_plant"),
-                gymLeader = GymLeader(
-                    name = "Lt. Surge",
-                    title = "The Lightning American",
-                    badgeName = "Thunder Badge",
-                    badgeEmoji = "⚡",
-                    specialtyType = PokemonType.ELECTRIC,
-                    acePokemonId = 26,
-                    acePokemonName = "Raichu"
-                ),
-                wildSpawns = listOf(
-                    WildSpawn(96, "Drowzee", 11, 15, "Tall Grass", "Common"),
-                    WildSpawn(50, "Diglett", 15, 22, "Diglett's Cave", "Very Common"),
-                    WildSpawn(51, "Dugtrio", 29, 31, "Diglett's Cave", "Rare")
-                ),
-                musicThemeDescription = "Bright coastal acoustic rhythm with ocean horn fanfares."
-            ),
-            RegionLocation(
-                id = "power_plant",
-                name = "Abandoned Power Plant",
-                type = LocationType.LEGENDARY_LAIR,
-                description = "An abandoned industrial generator facility now overgrown with electric sparks and mechanical traps.",
-                normalizedX = 0.78f,
-                normalizedY = 0.38f,
-                connectedToIds = listOf("vermilion_city", "lavender_town"),
-                legendary = LegendaryEncounter(
-                    pokemonId = 145,
-                    pokemonName = "Zapdos",
-                    encounterType = "Static Boss Encounter",
-                    level = 50,
-                    requirementText = "Surf down Route 10 to reach the remote turbine facility."
-                ),
-                wildSpawns = listOf(
-                    WildSpawn(81, "Magnemite", 21, 24, "Floor", "Common"),
-                    WildSpawn(100, "Voltorb", 21, 25, "Floor", "Very Common"),
-                    WildSpawn(101, "Electrode", 32, 40, "Fake Item Traps", "Uncommon"),
-                    WildSpawn(125, "Electabuzz", 33, 36, "Floor", "Rare")
-                ),
-                musicThemeDescription = "Buzzing synthesizer sparks and industrial metallic percussion."
-            ),
-            RegionLocation(
-                id = "lavender_town",
-                name = "Lavender Town",
-                type = LocationType.TOWN,
-                description = "A somber, mystical town shrouded in purple fog. Home to the Pokémon Tower where departed Pokémon rest.",
-                normalizedX = 0.82f,
-                normalizedY = 0.48f,
-                connectedToIds = listOf("power_plant", "celadon_city", "fuchsia_city"),
-                wildSpawns = listOf(
-                    WildSpawn(92, "Gastly", 18, 24, "Pokémon Tower", "Very Common"),
-                    WildSpawn(93, "Haunter", 20, 25, "Pokémon Tower", "Uncommon"),
-                    WildSpawn(104, "Cubone", 17, 22, "Pokémon Tower", "Rare")
-                ),
-                musicThemeDescription = "The iconic haunting chiptune melody in C Minor that echoed through gaming history."
-            ),
-            RegionLocation(
-                id = "celadon_city",
-                name = "Celadon City",
-                type = LocationType.CITY,
-                description = "The bustling commercial jewel of Kanto, featuring the massive Department Store, Game Corner, and Erika's Grass Gym.",
-                normalizedX = 0.46f,
-                normalizedY = 0.48f,
-                connectedToIds = listOf("saffron_city", "lavender_town", "fuchsia_city"),
-                gymLeader = GymLeader(
-                    name = "Erika",
-                    title = "The Nature-Loving Princess",
-                    badgeName = "Rainbow Badge",
-                    badgeEmoji = "🌈",
-                    specialtyType = PokemonType.GRASS,
-                    acePokemonId = 45,
-                    acePokemonName = "Vileplume"
-                ),
-                wildSpawns = listOf(
-                    WildSpawn(43, "Oddish", 22, 26, "Tall Grass", "Common"),
-                    WildSpawn(69, "Bellsprout", 22, 26, "Tall Grass", "Common"),
-                    WildSpawn(133, "Eevee", 25, 25, "Celadon Mansion Gift", "Unique")
-                ),
-                musicThemeDescription = "Upbeat, energetic urban jazz with accordion melodies."
-            ),
-            RegionLocation(
                 id = "saffron_city",
                 name = "Saffron City",
                 type = LocationType.CITY,
                 description = "The sprawling golden metropolis at the central crossroads of Kanto. Dominated by the Silph Co. skyscraper and Sabrina's Psychic Gym.",
-                normalizedX = 0.58f,
-                normalizedY = 0.48f,
+                normalizedX = 0.65f,
+                normalizedY = 0.46f,
                 connectedToIds = listOf("cerulean_city", "vermilion_city", "celadon_city", "lavender_town"),
                 gymLeader = GymLeader(
                     name = "Sabrina",
@@ -284,12 +198,98 @@ object RegionData {
                 musicThemeDescription = "High-tech futuristic synth beats pulsing through modern transit."
             ),
             RegionLocation(
+                id = "celadon_city",
+                name = "Celadon City",
+                type = LocationType.CITY,
+                description = "The bustling commercial jewel of Kanto, featuring the massive Department Store, Game Corner, and Erika's Grass Gym.",
+                normalizedX = 0.52f,
+                normalizedY = 0.46f,
+                connectedToIds = listOf("saffron_city", "fuchsia_city"),
+                gymLeader = GymLeader(
+                    name = "Erika",
+                    title = "The Nature-Loving Princess",
+                    badgeName = "Rainbow Badge",
+                    badgeEmoji = "🌈",
+                    specialtyType = PokemonType.GRASS,
+                    acePokemonId = 45,
+                    acePokemonName = "Vileplume"
+                ),
+                wildSpawns = listOf(
+                    WildSpawn(43, "Oddish", 22, 26, "Tall Grass", "Common"),
+                    WildSpawn(69, "Bellsprout", 22, 26, "Tall Grass", "Common"),
+                    WildSpawn(133, "Eevee", 25, 25, "Celadon Mansion Gift", "Unique")
+                ),
+                musicThemeDescription = "Upbeat, energetic urban jazz with accordion melodies."
+            ),
+            RegionLocation(
+                id = "lavender_town",
+                name = "Lavender Town",
+                type = LocationType.TOWN,
+                description = "A somber, mystical town shrouded in purple fog. Home to the Pokémon Tower where departed Pokémon rest.",
+                normalizedX = 0.82f,
+                normalizedY = 0.46f,
+                connectedToIds = listOf("power_plant", "saffron_city", "fuchsia_city"),
+                wildSpawns = listOf(
+                    WildSpawn(92, "Gastly", 18, 24, "Pokémon Tower", "Very Common"),
+                    WildSpawn(93, "Haunter", 20, 25, "Pokémon Tower", "Uncommon"),
+                    WildSpawn(104, "Cubone", 17, 22, "Pokémon Tower", "Rare")
+                ),
+                musicThemeDescription = "The iconic haunting chiptune melody in C Minor that echoed through gaming history."
+            ),
+            RegionLocation(
+                id = "power_plant",
+                name = "Abandoned Power Plant",
+                type = LocationType.LEGENDARY_LAIR,
+                description = "An abandoned industrial generator facility now overgrown with electric sparks and mechanical traps.",
+                normalizedX = 0.82f,
+                normalizedY = 0.36f,
+                connectedToIds = listOf("cerulean_city", "lavender_town"),
+                legendary = LegendaryEncounter(
+                    pokemonId = 145,
+                    pokemonName = "Zapdos",
+                    encounterType = "Static Boss Encounter",
+                    level = 50,
+                    requirementText = "Surf down Route 10 to reach the remote turbine facility."
+                ),
+                wildSpawns = listOf(
+                    WildSpawn(81, "Magnemite", 21, 24, "Floor", "Common"),
+                    WildSpawn(100, "Voltorb", 21, 25, "Floor", "Very Common"),
+                    WildSpawn(101, "Electrode", 32, 40, "Fake Item Traps", "Uncommon"),
+                    WildSpawn(125, "Electabuzz", 33, 36, "Floor", "Rare")
+                ),
+                musicThemeDescription = "Buzzing synthesizer sparks and industrial metallic percussion."
+            ),
+            RegionLocation(
+                id = "vermilion_city",
+                name = "Vermilion City",
+                type = LocationType.CITY,
+                description = "A sunny southern seaport where the luxury liner S.S. Anne docks. Lt. Surge commands the Electric Gym.",
+                normalizedX = 0.65f,
+                normalizedY = 0.63f,
+                connectedToIds = listOf("saffron_city"),
+                gymLeader = GymLeader(
+                    name = "Lt. Surge",
+                    title = "The Lightning American",
+                    badgeName = "Thunder Badge",
+                    badgeEmoji = "⚡",
+                    specialtyType = PokemonType.ELECTRIC,
+                    acePokemonId = 26,
+                    acePokemonName = "Raichu"
+                ),
+                wildSpawns = listOf(
+                    WildSpawn(96, "Drowzee", 11, 15, "Tall Grass", "Common"),
+                    WildSpawn(50, "Diglett", 15, 22, "Diglett's Cave", "Very Common"),
+                    WildSpawn(51, "Dugtrio", 29, 31, "Diglett's Cave", "Rare")
+                ),
+                musicThemeDescription = "Bright coastal acoustic rhythm with ocean horn fanfares."
+            ),
+            RegionLocation(
                 id = "fuchsia_city",
                 name = "Fuchsia City",
                 type = LocationType.CITY,
                 description = "A historic ninja settlement nestled on the southern coast. Home to Koga's Poison Gym and the vast Safari Zone.",
-                normalizedX = 0.58f,
-                normalizedY = 0.76f,
+                normalizedX = 0.56f,
+                normalizedY = 0.80f,
                 connectedToIds = listOf("celadon_city", "lavender_town", "seafoam_islands"),
                 gymLeader = GymLeader(
                     name = "Koga",
@@ -314,8 +314,8 @@ object RegionData {
                 name = "Seafoam Islands",
                 type = LocationType.LEGENDARY_LAIR,
                 description = "A twin pair of glacial sea caverns with turbulent whirlpools and chilling ice flows.",
-                normalizedX = 0.44f,
-                normalizedY = 0.88f,
+                normalizedX = 0.38f,
+                normalizedY = 0.90f,
                 connectedToIds = listOf("fuchsia_city", "cinnabar_island"),
                 legendary = LegendaryEncounter(
                     pokemonId = 144,
@@ -339,7 +339,7 @@ object RegionData {
                 type = LocationType.CITY,
                 description = "A volcanic island housing the Pokémon Research Lab, the scorched Pokémon Mansion, and Blaine's Fire Gym.",
                 normalizedX = 0.22f,
-                normalizedY = 0.88f,
+                normalizedY = 0.90f,
                 connectedToIds = listOf("seafoam_islands", "pallet_town"),
                 gymLeader = GymLeader(
                     name = "Blaine",
@@ -363,8 +363,8 @@ object RegionData {
                 name = "Indigo Plateau",
                 type = LocationType.POKEMON_LEAGUE,
                 description = "The ultimate pinnacle of strength where the Elite Four (Lorelei, Bruno, Agatha, Lance) and Champion Blue await challengers.",
-                normalizedX = 0.12f,
-                normalizedY = 0.22f,
+                normalizedX = 0.14f,
+                normalizedY = 0.30f,
                 connectedToIds = listOf("viridian_city"),
                 legendary = LegendaryEncounter(
                     pokemonId = 146,
