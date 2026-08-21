@@ -113,7 +113,7 @@ fun GlassmorphicNavigationBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEach { item ->
-                    val selected = currentRoute == item.route
+                    val selected = currentRoute?.substringBefore("?") == item.route.substringBefore("?")
 
                     GlassmorphicNavItem(
                         item = item,

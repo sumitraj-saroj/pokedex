@@ -9,13 +9,13 @@ plugins {
 
 android {
     namespace = "com.dexter.app"
-    compileSdk = 36
+    compileSdk = 35
     buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "com.dexter.app"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -25,13 +25,31 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("dexter-release.jks")
+            storePassword = "dexter123"
+            keyAlias = "dexter"
+            keyPassword = "dexter123"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            // Ensure debug builds also use proper signing and avoid testOnly restrictions
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -103,4 +121,5 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }

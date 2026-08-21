@@ -1,5 +1,6 @@
 ### Gradle / Build ###
 *.iml
+*.apk
 .gradle/
 /build/
 /app/build/

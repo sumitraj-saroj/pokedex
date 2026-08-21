@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CatchingPokemon
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Groups
@@ -65,6 +66,8 @@ import com.dexter.app.ui.auth.LoginScreen
 import com.dexter.app.ui.auth.LoginViewModel
 import com.dexter.app.ui.auth.RegisterScreen
 import com.dexter.app.ui.auth.RegisterViewModel
+import com.dexter.app.ui.battle.BattleHubScreen
+import com.dexter.app.ui.battle.BattleViewModel
 import com.dexter.app.ui.compare.CompareScreen
 import com.dexter.app.ui.compare.CompareViewModel
 import com.dexter.app.ui.detail.DetailScreen
@@ -105,11 +108,12 @@ fun DexterNavHost(
     val bottomNavItems = listOf(
         BottomNavItem("Pokédex", Screen.Home.route, Icons.Default.CatchingPokemon),
         BottomNavItem("Team", Screen.TeamBuilder.route, Icons.Default.Groups),
+        BottomNavItem("Battle", Screen.BattleHub.createRoute(), Icons.Default.Bolt),
         BottomNavItem("Compare", Screen.Compare.route, Icons.AutoMirrored.Filled.CompareArrows),
         BottomNavItem("Quiz", Screen.Quiz.route, Icons.Default.Psychology)
     )
 
-    val showBottomBar = currentRoute in bottomNavItems.map { it.route }
+    val showBottomBar = bottomNavItems.any { it.route.substringBefore("?") == currentRoute?.substringBefore("?") }
     val haptics = com.dexter.app.ui.common.rememberHapticUtils(isEnabled = profileUiState.trainerData.isHapticEnabled)
 
     // --- Scroll-to-hide bottom bar logic ---
@@ -207,6 +211,111 @@ fun DexterNavHost(
                         onPokemonClick = { pokemonId ->
                             navController.navigate(Screen.Detail.createRoute(pokemonId))
                         }
+                    )
+                }
+
+                composable(
+                    route = Screen.BattleHub.route,
+                    arguments = listOf(
+                        navArgument("tab") {
+                            type = NavType.StringType
+                            defaultValue = "damage"
+                        },
+                        navArgument("pokemonId") {
+                            type = NavType.IntType
+                            defaultValue = 0
+                        }
+                    )
+                ) {
+                    val viewModel: BattleViewModel = hiltViewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    BattleHubScreen(
+                        uiState = uiState,
+                        onTabSelected = viewModel::selectTab,
+                        // Damage Calc Handlers
+                        onAttackerSelected = viewModel::setAttackerPokemon,
+                        onDefenderSelected = viewModel::setDefenderPokemon,
+                        onSwapAttackerDefender = viewModel::swapAttackerAndDefender,
+                        onAttackerLevelChange = viewModel::setAttackerLevel,
+                        onAttackerNatureChange = viewModel::setAttackerNature,
+                        onAttackerItemChange = viewModel::setAttackerItem,
+                        onAttackerAbilityChange = viewModel::setAttackerAbility,
+                        onAttackerStageChange = viewModel::setAttackerStatStage,
+                        onAttackerEvChange = viewModel::setAttackerEv,
+                        onAttackerIvChange = viewModel::setAttackerIv,
+                        onAttackerBurnChange = viewModel::setAttackerBurned,
+                        onAttackerTeraTypeChange = viewModel::setAttackerTeraType,
+                        onDefenderLevelChange = viewModel::setDefenderLevel,
+                        onDefenderNatureChange = viewModel::setDefenderNature,
+                        onDefenderItemChange = viewModel::setDefenderItem,
+                        onDefenderAbilityChange = viewModel::setDefenderAbility,
+                        onDefenderStageChange = viewModel::setDefenderStatStage,
+                        onDefenderEvChange = viewModel::setDefenderEv,
+                        onDefenderIvChange = viewModel::setDefenderIv,
+                        onDefenderTeraTypeChange = viewModel::setDefenderTeraType,
+                        onDefenderHpPercentChange = viewModel::setDefenderCurrentHpPercent,
+                        onSelectMove = viewModel::selectMove,
+                        onCriticalToggle = viewModel::setCritical,
+                        onCustomMovePowerChange = viewModel::setCustomMovePower,
+                        onCustomMoveTypeChange = viewModel::setCustomMoveType,
+                        onCustomMoveCategoryChange = viewModel::setCustomMoveCategory,
+                        onWeatherChange = viewModel::setWeather,
+                        onTerrainChange = viewModel::setTerrain,
+                        onDoublesToggle = viewModel::setDoubles,
+                        onReflectToggle = viewModel::toggleReflect,
+                        onLightScreenToggle = viewModel::toggleLightScreen,
+                        onAuroraVeilToggle = viewModel::toggleAuroraVeil,
+                        onStealthRockToggle = viewModel::toggleStealthRock,
+                        onSpikesLayersChange = viewModel::setSpikesLayers,
+                        onHelpingHandToggle = viewModel::toggleHelpingHand,
+                        onOpenAttackerPicker = viewModel::openAttackerPicker,
+                        onCloseAttackerPicker = viewModel::closeAttackerPicker,
+                        onOpenDefenderPicker = viewModel::openDefenderPicker,
+                        onCloseDefenderPicker = viewModel::closeDefenderPicker,
+                        // Stat Calc Handlers
+                        onStatCalcPokemonSelected = viewModel::setStatCalcPokemon,
+                        onStatCalcLevelChange = viewModel::setStatCalcLevel,
+                        onStatCalcNatureChange = viewModel::setStatCalcNature,
+                        onStatCalcIvChange = viewModel::setStatCalcIv,
+                        onStatCalcAllIvsChange = viewModel::setStatCalcAllIvs,
+                        onStatCalcEvChange = viewModel::setStatCalcEv,
+                        onStatCalcEvPresetSelected = viewModel::setStatCalcEvPreset,
+                        onStatCalcItemChange = viewModel::setStatCalcItem,
+                        onStatCalcTeraTypeChange = viewModel::setStatCalcTeraType,
+                        onCopyShowdownSuccess = viewModel::triggerCopySuccess,
+                        onSendStatCalcToDamageCalc = viewModel::sendStatCalcToDamageCalc,
+                        onOpenStatCalcPicker = viewModel::openStatCalcPokemonPicker,
+                        onCloseStatCalcPicker = viewModel::closeStatCalcPokemonPicker,
+                        // Speed Tier Handlers
+                        onSpeedTierLevelChange = viewModel::setSpeedTierLevel,
+                        onSpeedTierSearchQueryChange = viewModel::setSpeedTierSearchQuery,
+                        onSpeedTierCategoryFilterSelect = viewModel::setSpeedTierCategoryFilter,
+                        onSpeedTierUserPokemonSelected = viewModel::setSpeedTierUserPokemon,
+                        onUserSpeedNatureChange = viewModel::setUserSpeedNature,
+                        onUserSpeedEvChange = viewModel::setUserSpeedEv,
+                        onUserSpeedIvChange = viewModel::setUserSpeedIv,
+                        onUserSpeedStatStageChange = viewModel::setUserSpeedStatStage,
+                        onUserSpeedScarfToggle = viewModel::setUserSpeedScarf,
+                        onUserSpeedBoosterToggle = viewModel::setUserSpeedBooster,
+                        onUserSpeedSwiftSwimToggle = viewModel::setUserSpeedSwiftSwim,
+                        onUserSpeedTailwindToggle = viewModel::setUserSpeedTailwind,
+                        onUserSpeedParalyzedToggle = viewModel::setUserSpeedParalyzed,
+                        onOpenSpeedTierPicker = viewModel::openSpeedTierUserPokemonPicker,
+                        onCloseSpeedTierPicker = viewModel::closeSpeedTierUserPokemonPicker,
+                        // Catch Calc Handlers
+                        onCatchCalcPokemonSelected = viewModel::setCatchCalcPokemon,
+                        onCatchCalcLevelChange = viewModel::setCatchCalcLevel,
+                        onCatchCalcHpPercentChange = viewModel::setCatchCalcHpPercent,
+                        onCatchCalcStatusChange = viewModel::setCatchCalcStatus,
+                        onCatchCalcBallSelected = viewModel::setCatchCalcBall,
+                        onCatchCalcTurnChange = viewModel::setCatchCalcTurn,
+                        onCatchCalcNightOrCaveToggle = viewModel::setCatchCalcNightOrCave,
+                        onCatchCalcWaterEncounterToggle = viewModel::setCatchCalcWaterEncounter,
+                        onCatchCalcAlreadyInPokedexToggle = viewModel::setCatchCalcAlreadyInPokedex,
+                        onCatchCalcPlayerLevelChange = viewModel::setCatchCalcPlayerLevel,
+                        onOpenCatchCalcPicker = viewModel::openCatchCalcPokemonPicker,
+                        onCloseCatchCalcPicker = viewModel::closeCatchCalcPokemonPicker
                     )
                 }
 
@@ -336,6 +445,9 @@ fun DexterNavHost(
                             navController.navigate(Screen.Detail.createRoute(pokemonId))
                         },
                         onRetryTcgCards = viewModel::retryFetchTcgCards,
+                        onOpenBattleHub = { tab, pokemonId ->
+                            navController.navigate(Screen.BattleHub.createRoute(tab, pokemonId))
+                        },
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this@composable
                     )

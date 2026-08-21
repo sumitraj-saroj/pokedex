@@ -54,8 +54,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.dexter.app.data.repository.AppThemeMode
@@ -78,6 +80,7 @@ fun DetailScreen(
     onVariantSelected: (PokemonVariant) -> Unit,
     onPokemonClick: (Int) -> Unit,
     onRetryTcgCards: () -> Unit = {},
+    onOpenBattleHub: ((tab: String, pokemonId: Int) -> Unit)? = null,
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
@@ -389,6 +392,75 @@ fun DetailScreen(
                     secondaryType = activeSecondaryType,
                     modifier = Modifier.padding(horizontal = Dimens.ScreenEdgePadding, vertical = Dimens.Tight)
                 )
+
+                // ⚔️ Competitive & Battle Utilities Card
+                if (onOpenBattleHub != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Dimens.ScreenEdgePadding, vertical = Dimens.Tight),
+                        shape = RoundedCornerShape(Dimens.Default),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.ElevationLevel1)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(Dimens.Default)
+                        ) {
+                            Text(
+                                text = "⚔️ Battle & Competitive Utilities",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Analyze damage calculations, customize EVs/IVs, and check speed benchmarks.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                androidx.compose.material3.OutlinedButton(
+                                    onClick = { onOpenBattleHub("damage", basePokemon.id) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                                    modifier = Modifier.weight(1f).height(38.dp)
+                                ) {
+                                    Text("💥 Dmg", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                                androidx.compose.material3.OutlinedButton(
+                                    onClick = { onOpenBattleHub("stat", basePokemon.id) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                                    modifier = Modifier.weight(1f).height(38.dp)
+                                ) {
+                                    Text("📊 Stats", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                                androidx.compose.material3.OutlinedButton(
+                                    onClick = { onOpenBattleHub("speed", basePokemon.id) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                                    modifier = Modifier.weight(1f).height(38.dp)
+                                ) {
+                                    Text("⚡ Speed", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                                androidx.compose.material3.OutlinedButton(
+                                    onClick = { onOpenBattleHub("catch", basePokemon.id) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                                    modifier = Modifier.weight(1f).height(38.dp)
+                                ) {
+                                    Text("🎯 Catch", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // Interactive Evolution Tree
                 EvolutionTreeSection(
