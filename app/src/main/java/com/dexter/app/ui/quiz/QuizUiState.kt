@@ -15,5 +15,11 @@ data class QuizUiState(
     val isAnswered: Boolean = false,
     val selectedOptionId: Int? = null,
     val isGameOver: Boolean = false,
-    val isPlayingAudio: Boolean = false
-)
+    val isPlayingAudio: Boolean = false,
+    val selectedGenerations: Set<Int> = emptySet(),
+    val generationCounts: Map<Int, Int> = emptyMap(),
+    val availablePokemonCount: Int = 0
+) {
+    val isAllGenerationsSelected: Boolean
+        get() = selectedGenerations.isEmpty() || selectedGenerations.size == 9
+}

@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
 import java.util.LinkedList
 
 @HiltViewModel
@@ -55,9 +54,17 @@ class QuizViewModel @Inject constructor(
             pokemonRepository.observeAllPokemon().collect { list ->
                 if (list.isNotEmpty()) {
                     allPokemonPool = list
+                    val genCounts = list.groupingBy { it.effectiveGeneration }.eachCount()
+                    val filteredPool = getFilteredPool()
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            generationCounts = genCounts,
+                            availablePokemonCount = filteredPool.size
+                        )
+                    }
                     if (_uiState.value.targetPokemon == null) {
                         refillQueueAndPrecache()
-                        _uiState.update { it.copy(isLoading = false) }
                         loadNextQuestion()
                     }
                 }
@@ -65,10 +72,69 @@ class QuizViewModel @Inject constructor(
         }
     }
 
+    private fun getFilteredPool(gens: Set<Int> = _uiState.value.selectedGenerations): List<Pokemon> {
+        return if (gens.isEmpty() || gens.size == 9) {
+            allPokemonPool
+        } else {
+            allPokemonPool.filter { gens.contains(it.effectiveGeneration) }
+        }
+    }
+
+    fun toggleGeneration(generation: Int) {
+        val current = _uiState.value.selectedGenerations
+        val next = if (current.isEmpty() || current.size == 9) {
+            // If all are selected, tapping a generation isolates to just that generation
+            setOf(generation)
+        } else if (current.contains(generation)) {
+            val updated = current - generation
+            if (updated.isEmpty()) emptySet() else updated
+        } else {
+            val updated = current + generation
+            if (updated.size == 9) emptySet() else updated
+        }
+        applyGenerationSelection(next)
+    }
+
+    fun selectAllGenerations() {
+        applyGenerationSelection(emptySet())
+    }
+
+    fun selectGenerationPreset(generations: Set<Int>) {
+        val next = if (generations.size == 9) emptySet() else generations
+        applyGenerationSelection(next)
+    }
+
+    fun clearGenerationFilter() {
+        applyGenerationSelection(emptySet())
+    }
+
+    private fun applyGenerationSelection(newGenerations: Set<Int>) {
+        autoAdvanceJob?.cancel()
+        targetQueue.clear()
+        val pool = getFilteredPool(newGenerations)
+
+        _uiState.update { current ->
+            current.copy(
+                selectedGenerations = newGenerations,
+                availablePokemonCount = pool.size,
+                targetPokemon = null,
+                options = emptyList(),
+                isAnswered = false,
+                selectedOptionId = null
+            )
+        }
+
+        if (pool.isNotEmpty()) {
+            refillQueueAndPrecache()
+            loadNextQuestion()
+        }
+    }
+
     private fun refillQueueAndPrecache() {
-        if (allPokemonPool.isEmpty()) return
+        val pool = getFilteredPool()
+        if (pool.isEmpty()) return
         while (targetQueue.size < 5) {
-            val candidate = allPokemonPool.random()
+            val candidate = pool.random()
             targetQueue.add(candidate)
             precacheOfficialArtwork(candidate)
         }
@@ -88,19 +154,34 @@ class QuizViewModel @Inject constructor(
 
     fun loadNextQuestion() {
         autoAdvanceJob?.cancel()
-        if (allPokemonPool.size < 4) return
+        val pool = getFilteredPool()
+        if (pool.size < 4) {
+            if (pool.isNotEmpty()) {
+                val target = pool.random()
+                _uiState.update {
+                    it.copy(
+                        targetPokemon = target,
+                        options = pool.shuffled(),
+                        isAnswered = false,
+                        selectedOptionId = null
+                    )
+                }
+                precacheOfficialArtwork(target)
+            }
+            return
+        }
 
         refillQueueAndPrecache()
 
-        val target = if (targetQueue.isNotEmpty()) targetQueue.removeFirst() else allPokemonPool.random()
+        val target = if (targetQueue.isNotEmpty()) targetQueue.removeFirst() else pool.random()
         refillQueueAndPrecache()
 
         val distractors = mutableListOf<Pokemon>()
-        val poolSize = allPokemonPool.size
+        val poolSize = pool.size
         val usedIds = mutableSetOf(target.id)
         val random = kotlin.random.Random
         while (distractors.size < 3 && usedIds.size < poolSize) {
-            val candidate = allPokemonPool[random.nextInt(poolSize)]
+            val candidate = pool[random.nextInt(poolSize)]
             if (usedIds.add(candidate.id)) {
                 distractors.add(candidate)
             }
@@ -195,8 +276,10 @@ class QuizViewModel @Inject constructor(
 
     fun restartGame() {
         autoAdvanceJob?.cancel()
+        targetQueue.clear()
+        val pool = getFilteredPool()
         _uiState.update {
-            QuizUiState(
+            it.copy(
                 isLoading = false,
                 lives = 3,
                 currentStreak = 0,
@@ -204,9 +287,13 @@ class QuizViewModel @Inject constructor(
                 totalXpEarned = 0,
                 correctCount = 0,
                 bestStreak = 0,
-                isGameOver = false
+                isGameOver = false,
+                isAnswered = false,
+                selectedOptionId = null,
+                availablePokemonCount = pool.size
             )
         }
+        refillQueueAndPrecache()
         loadNextQuestion()
     }
 

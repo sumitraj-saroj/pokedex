@@ -216,7 +216,10 @@ fun DexterNavHost(
                         onSelectOption = { pokemonId -> viewModel.selectOption(pokemonId, haptics) },
                         onPlayCry = viewModel::playCry,
                         onRestartGame = viewModel::restartGame,
-                        onProfileClick = { navController.navigate(Screen.Profile.route) }
+                        onProfileClick = { navController.navigate(Screen.Profile.route) },
+                        onToggleGeneration = viewModel::toggleGeneration,
+                        onSelectAllGenerations = viewModel::selectAllGenerations,
+                        onSelectGenerationPreset = viewModel::selectGenerationPreset
                     )
                 }
 
